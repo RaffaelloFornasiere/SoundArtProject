@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BmbxuPwQa2lc/FVzBcNJ7UAyJxM6wuqIj61tLrc4wSX0szH/Ev+nYRRuWlolflfl" crossorigin="anonymous">
+    <!-- Option 1: Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.bundle.min.js" integrity="sha384-b5kHyXgcpbZJO/tY9Ul7kGkf1S0CWuKcCD38l8YkeH8z8QjE0GmW1gYU5S9FOnJ0" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/11.0.2/bootstrap-slider.min.js" integrity="sha512-f0VlzJbcEB6KiW8ZVtL+5HWPDyW1+nJEjguZ5IVnSQkvZbwBt2RfCBY0CBO1PsMAqxxrG4Di6TfsCPP3ZRwKpA==" crossorigin="anonymous"></script>
+
+
+
+
+    <title>SoundArt WebApp</title>
+  </head>
+  <body>
+
+    <!-- Optional JavaScript; choose one of the two! -->
+
+
+    <!-- Option 2: Separate Popper and Bootstrap JS -->
+    <!--
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.6.0/dist/umd/popper.min.js" integrity="sha384-KsvD1yqQ1/1+IA7gi3P0tyJcT3vR+NdBTt13hSJ2lnve8agRGXTTyNaBYmCR/Nwi" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.min.js" integrity="sha384-nsg8ua9HAw1y0W1btsyWgBklPnCUAFLuTMS2G72MMONqmOymq585AcH49TLBQObG" crossorigin="anonymous"></script>
+    -->
+    <h1>SoundArt WebApp</h1>
+
+
+      <div class="container" id="volumesController">
+        <h3>Volumi</h3>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked>
+          <label class="form-check-label" for="flexCheckChecked">
+            Checked checkbox
+          </label>
+        </div>
+      </div>
+    
+    
+  
+<script>
+ 
+    var nOfDevices = 6;
+    var audios = ["audio1", "audio2", "audio3", "audio4"];
+
+    for(let i = 0; i < nOfDevices; i++)
+    {
+      //creates the row with the volume range
+      let box = document.createElement("div");
+      box.className = "row border shadow p-3 mb-3 bg-body rounded";
+      document.getElementById("volumesController").appendChild(box);
+
+
+      let maincol1 = document.createElement("div");
+      maincol1.className = "col-8 align-self-center"; 
+      let maincol2 = document.createElement("div");
+      maincol2.className = "col-2 align-self-center"; 
+      let maincol3 = document.createElement("div");
+      maincol3.className = "col align-self-center"; 
+
+      
+      
+      let row = document.createElement("div");
+      row.className = "row";
+      maincol1.appendChild(row);
+
+      box.appendChild(maincol1); box.appendChild(maincol2); box.appendChild(maincol3);
+      
+      
+      
+      
+
+      /* maincol 1*/
+      let text = document.createElement("h5");
+      text.textContent = "Device " + i;
+      row.appendChild(text);
+
+      let col1 = document.createElement("div");
+      col1.className = "col-10";
+      let col2 = document.createElement("div");
+      col2.className = "col";
+      row.appendChild(col1); row.appendChild(col2);
+        
+      
+      
+      let input = document.createElement("input");
+      input.type = "range"; input.id = "volumeRange" + i; input.className = "form-range col-8";
+      let value = document.createElement("span");
+      value.className = "badge bg-secondary col"; value.textContent = input.value;
+      input.oninput = function(){value.textContent = input.value;};
+
+
+      let dropDownDiv = document.createElement("div"); dropDownDiv.className = "dropdown";
+      let sButton = document.createElement("button");
+      sButton.type = "button"; sButton.className = "btn btn-secondary dropdown-toggle"; sButton.textContent="Suono";
+      sButton.setAttribute("data-bs-toggle", "dropdown"); sButton.setAttribute("aria-expanded", "false"); 
+      sButton.id = "dropdownMenuButton" +1; 
+      col1.appendChild(input); col2.appendChild(value);
+
+
+      /* maincol2 */
+      let dropdownItem = document.createElement("ul"); dropdownItem.className = "dropdown-menu";
+      dropdownItem.setAttribute("aria-labelledby", "dropdownMenuButton" + i);
+      for(let j = 0; j < audios.length; j++)
+      {
+        let li = document.createElement("li");
+        li.className = "dropdown-item";
+        
+        li.appendChild(document.createTextNode(audios[j]));
+        dropdownItem.appendChild(li);
+      }
+      dropDownDiv.appendChild(sButton); dropDownDiv.appendChild(dropdownItem);
+
+
+      maincol2.appendChild(dropDownDiv);
+    
+      /*maincol3*/
+      let checkBoxForm = document.createElement("div"); checkBoxForm.className = "form-check";
+      let checkBox = document.createElement("input"); checkBox.className = "form-check-input"; checkBox.type = "checkbox";
+      checkBox.id = "flexCheckChecked" + i; 
+      let label = document.createElement("label"); label.className = "form-check-label"; label.setAttribute("for", "flexCheckChecked" +i);
+      label.textContent = "Loop";
+      checkBoxForm.appendChild(checkBox); checkBoxForm.appendChild(label);
+      maincol3.appendChild(checkBoxForm);
+      
+    }
+
+    
+</script>
+
+<script>
+  function SendValues(slider) {
+    var sliderValue = slider.value;
+    document.getElementById("sliderValue1").innerHTML = sliderValue;
+    //console.log(sliderValue);
+    //var xhr = new XMLHttpRequest();
+    //xhr.open("GET", "/slider?value="+sliderValue, true);
+    //xhr.send();
+  }
+
+</script>
+</body>
+</html>

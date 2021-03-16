@@ -11,7 +11,7 @@
     <p>Select a new file to upload to the ESP8266. Existing files will be replaced.</p>
     <form method="POST" enctype="multipart/form-data">
         <input type="file" name="data">
-        <input class="button" type="submit" value="Upload">
+        <input class="button" type="submit" value="cazzo">
     </form>
 
 
@@ -26,16 +26,16 @@
 	var file = fileInput.files[0];
 
 	var xhr = new XMLHttpRequest();
-	xhr.upload.addEventListener('progress', onprogressHandler, false);
+	//xhr.upload.addEventListener('progress', onprogressHandler, false);
 	xhr.open('POST', '/upload/uri', true);
-	
+
 	var formData = new FormData();
 	formData.append("thefile", file);
 	xhr.send(formData);
 /*
 	
 	xhr.send(file); // Simple!*/
-}
+	}
 	function onprogressHandler(evt) {
     	var percent = evt.loaded/evt.total*100;
     	console.log('Upload progress: ' + percent + '%');

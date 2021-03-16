@@ -27,6 +27,7 @@
         crossorigin="anonymous"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
+
     <title>SoundArt WebApp</title>
 </head>
 
@@ -59,17 +60,7 @@
                             <input class="form-control m2" type="file" id="aggiungiFormFile" />
                             <div class="row">
                                 <div class="col-md-4 col-lg-2">
-                                    <button class="btn btn-primary mt-1 btn-block" onclick="(function(){
-                                var fileInput = document.getElementById('aggiungiFormFile');
-                                var file = fileInput.files[0];
-                              
-                                var xhr = new XMLHttpRequest();
-                                //xhr.upload.addEventListener('progress', onprogressHandler, false);
-                                xhr.open('POST', '/upload/uri', true);
-                              
-                                var formData = new FormData();
-                                formData.append('thefile', file);
-                                xhr.send(formData);})()">
+                                    <button class="btn btn-primary mt-1 btn-block" onclick="UploadFile()">
                                         Upload</button>
                                 </div><!-- /col -->
                             </div><!-- /row -->
@@ -119,8 +110,10 @@
                 text.textContent = "Device " + i;
                 let testButton = document.createElement("label"); testButton.type = "button";
                 testButton.className = "btn btn-primary col-3";
+                testButton.onclick = function () { SendXhrPOST("test/device=" + i); };
                 let testButtonIcon = document.createElement("i"); testButtonIcon.className = "material-icons";
-                testButtonIcon.textContent = "phonelink_ring"; testButton.appendChild(testButtonIcon);
+                testButtonIcon.textContent = "phonelink_ring";
+                testButton.appendChild(testButtonIcon);
 
                 row.appendChild(text); row.appendChild(testButton);
 
@@ -135,6 +128,7 @@
 
                 let input = document.createElement("input");
                 input.type = "range"; input.id = "volumeRange" + i; input.className = "form-range col-8";
+                input.onchange = function () { SendXhrPOST("setVolume/device=" + i + "&volume=" + input.value); };
                 let value = document.createElement("span");
                 value.className = "badge bg-secondary col"; value.textContent = input.value;
                 input.oninput = function () { value.textContent = input.value; };
@@ -151,20 +145,21 @@
                 sButton.setAttribute("data-bs-toggle", "dropdown"); sButton.setAttribute("aria-expanded", "false");
                 sButton.id = "dropdownMenuButton" + i;
                 dropDownDiv.appendChild(sButton);
-                
+
 
 
 
                 let dropdownItem = document.createElement("ul"); dropdownItem.className = "dropdown-menu";
                 dropdownItem.setAttribute("aria-labelledby", "dropdownMenuButton" + i);
-                for (let j = 0; j < audios.length; j++) {
-                        let li = document.createElement("li");
-                        li.id = "dropDownSoundList" + i + "Item" + j;
-                        li.className = "dropdown-item";
-
-                        li.textContent = audios[j];// appendChild(document.createTextNode(audios[j]));
-                        dropdownItem.appendChild(li);
-                    }
+                for (let audio of audios) {
+                    let li = document.createElement("li");
+                    li.id = "dropDownSoundList" + i + audio;
+                    //alert("dropDownSoundList" + i + "Item" + audios[j].id)
+                    li.className = "dropdown-item";
+                    li.textContent = audio;// appendChild(document.createTextNode(audios[j]));
+                    li.onclick = function () { SendXhrPOST("setAudio/device=" + i + "&audio=" + audio); };
+                    dropdownItem.appendChild(li);
+                }
 
                 dropDownDiv.appendChild(dropdownItem);
 
@@ -174,6 +169,9 @@
                 let checkBoxForm = document.createElement("div"); checkBoxForm.className = "form-check";
                 let checkBox = document.createElement("input"); checkBox.className = "form-check-input"; checkBox.type = "checkbox";
                 checkBox.id = "flexCheckChecked" + i;
+                checkBox.onchange = function () {
+                    SendXhrPOST("setVolume/device=" + i + "&loop=" + (checkBox.checked ? "1" : "0"));
+                };
                 let label = document.createElement("label"); label.className = "form-check-label"; label.setAttribute("for", "flexCheckChecked" + i);
                 label.textContent = "Loop";
                 checkBoxForm.appendChild(checkBox); checkBoxForm.appendChild(label);
@@ -182,56 +180,85 @@
             }
         }
 
-        
+
 
 
         function CreateSettings() {
             let audioList = document.getElementById("audioList");
 
-            for (let i = 0; i < audios.length; i++) {
+            for (let audio of audios) {
                 let li = document.createElement("li");
                 li.className = "list-group-item d-flex justify-content-between align-items-center";
-                let liText = document.createElement("h5"); liText.textContent = audios[i];
-                let liButton = document.createElement("button"); liButton.className = "btn btn-danger btn-sm";
-                liButton.onclick = function () 
-                { 
+                let liText = document.createElement("h5"); liText.textContent = audio;
+                //liText.contentEditable = true;
+                //liText.onclose = function() {alert("diocan");}
+                //let divButtons = document.createElement("div");
+                //divButtons.className = "btn-group"; divButtons.setAttribute("role", "group"); 
+                //li.appendChild(divButtons);
+
+                /*
+                <div class="btn-group" role="group" aria-label="Basic example">
+                            <button type="button" class="btn btn-secondary">Modifica</button>
+                            <button type="button" class="btn btn-danger">Elimina</button>
+                </div>
+                */
+                let liDelButton = document.createElement("button"); liDelButton.className = "btn btn-danger btn-sm";
+                liDelButton.onclick = function () {
                     li.remove();
-                    for(let j = 0; j < nOfDevices; j++)
-                    {
-                        let aux = $("#dropDownSoundList" + j + "Item" + i);
-                        if(aux.text() == audios[i])
-                        {
-                            //alert("deleting item " + i + " for list " + j );
+
+                    for (let j = 0; j < nOfDevices; j++) {
+                        let aux = $("#dropDownSoundList" + j + audio);
+                        //alert("dropDownSoundList" + j + " " + audio + " i: " + audios.indexOf(audio));
+                        if (aux.text() == audio) {
+                            //alert("deleting " + audio + " for list " + j );
                             aux.remove();
                         }
+
                     }
-                    audios.splice(i, 1); 
+                    audios.splice(audios.indexOf(audio), 1);
+                    SendXhrPOST("/deleteAudio/audio=" + audio);
                 }
-                liButton.textContent = "Elimina";
-                li.appendChild(liText); li.appendChild(liButton);
+                liDelButton.textContent = "Elimina";
+                li.appendChild(liText); li.appendChild(liDelButton);
                 audioList.appendChild(li);
 
             }
+
+
         }
 
-
-        
-
-
-        function SendValues(slider) {
-            var sliderValue = slider.value;
-            document.getElementById("sliderValue1").innerHTML = sliderValue;
-            //console.log(sliderValue);
-            //var xhr = new XMLHttpRequest();
-            //xhr.open("GET", "/slider?value="+sliderValue, true);
-            //xhr.send();
+        function SendXhrPOST(str) {
+            let xhr = new XMLHttpRequest();
+            xhr.open('POST', str, true);
+            xhr.send();
         }
 
+        function UploadFile() {
 
-        var nOfDevices = 6;
+            let fileInput = document.getElementById('aggiungiFormFile');
+            let file = fileInput.files[0];
+
+            let xhr = new XMLHttpRequest();
+            //xhr.upload.addEventListener('progress', onprogressHandler, false);
+            xhr.open('POST', '/upload/uri', true);
+
+            let formData = new FormData();
+            formData.append('thefile', file);
+            xhr.send(formData);
+
+        }
+
+        //nOfDevices [DO NOT DELETE THIS COMMENT]
+        var nOfDevices = 1;
         var audios = ["audio1", "audio2", "audio3", "audio4"];
-        CreateControls();
-        CreateSettings();
+        if (nOfDevices == 0) {
+            let div = document.createElement("div");
+            document.body.appendChild (document.createTextNode("Nessun Dispositivo"));
+            document.getElementById("volumesController").hidden = true;
+        } else {
+            CreateControls();
+            CreateSettings();
+        }
     </script>
 </body>
 
