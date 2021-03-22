@@ -6,22 +6,18 @@
 #include <ESP8266HTTPClient.h>
 #include <ESP8266mDNS.h>
 #include <ESP8266WebServer.h>
-#include <FS.h> // Include the SPIFFS library
+#include <SD.h>
 const char *ssid = "FASTWEB-NGCN3V";
 const char *password = "G3P32AOH7L";
 ESP8266WiFiMulti wifiMulti; // Create an instance of the ESP8266WiFiMulti class, called 'wifiMulti'
 
 ESP8266WebServer server(80); // Create a webserver object that listens for HTTP request on port 80
-File fsUploadFile;           // a File object to temporarily store the received file
-
-
-
 
 
 
 String getContentType(String filename); // convert the file extension to the MIME type
 bool handleFileRead(String path);       // send the right file to the client (if it exists)
-void handleFileUpload();                // upload a new file to the SPIFFS
+void handleFileUpload();                // upload a new file to the SD
 void setup()
 {
     
@@ -32,8 +28,6 @@ void setup()
     Serial.println('\n');
 
     wifiMulti.addAP(ssid, password); // add Wi-Fi networks you want to connect to
-    wifiMulti.addAP("ssid_from_AP_2", "your_password_for_AP_2");
-    wifiMulti.addAP("ssid_from_AP_3", "your_password_for_AP_3");
 
     Serial.println("Connecting ...");
     int i = 0;
@@ -58,19 +52,13 @@ void setup()
         Serial.println("Error setting up MDNS responder!");
     }
 
-    SPIFFS.begin(); // Start the SPI Flash Files System
+    SD.begin(D2); // Start the SPI Flash Files System
 
-    /*server.on("/upload", HTTP_GET, []() {                 // if the client requests the upload page
+    server.on("/upload", HTTP_GET, []() {                 // if the client requests the upload page
     if (!handleFileRead("/upload.html"))                // send it if it exists
       server.send(404, "text/plain", "404: Not Found"); // otherwise, respond with a 404 (Not Found) error
-  });*/
+  });
     
-    //std::function<void(void)> f = (obj.*fptr);
-    /*server.on(
-        "/upload", HTTP_POST, // if the client posts to the upload page
-        []() { server.send(200); },
-        (obj.function) // Receive and save the file
-    );*/
 
     server.on(
         "/upload/uri", HTTP_POST, // if the client posts to the upload page
@@ -92,34 +80,36 @@ void loop()
     server.handleClient();
 }
 
-String getContentType(String filename)
-{ // convert the file extension to the MIME type
-    if (filename.endsWith(".html"))
-        return "text/html";
-    else if (filename.endsWith(".css"))
-        return "text/css";
-    else if (filename.endsWith(".js"))
-        return "application/javascript";
-    else if (filename.endsWith(".ico"))
-        return "image/x-icon";
-    else if (filename.endsWith(".gz"))
-        return "application/x-gzip";
-    return "text/plain";
-    
+
+String getContentType(String filename){
+  if(filename.endsWith(".htm")) return "text/html";
+  else if(filename.endsWith(".html")) return "text/html";
+  else if(filename.endsWith(".css")) return "text/css";
+  else if(filename.endsWith(".js")) return "application/javascript";
+  else if(filename.endsWith(".png")) return "image/png";
+  else if(filename.endsWith(".gif")) return "image/gif";
+  else if(filename.endsWith(".jpg")) return "image/jpeg";
+  else if(filename.endsWith(".ico")) return "image/x-icon";
+  else if(filename.endsWith(".xml")) return "text/xml";
+  else if(filename.endsWith(".pdf")) return "application/x-pdf";
+  else if(filename.endsWith(".zip")) return "application/x-zip";
+  else if(filename.endsWith(".gz")) return "application/x-gzip";
+  return "text/plain";
 }
+
 
 bool handleFileRead(String path)
 { // send the right file to the client (if it exists)
     Serial.println("handleFileRead: " + path);
     if (path.endsWith("/"))
-        path += "credentials.html";                  // If a folder is requested, send the index file
+        path += "indexU.html";                  // If a folder is requested, send the index file
     String contentType = getContentType(path); // Get the MIME type
     String pathWithGz = path + ".gz";
-    if (SPIFFS.exists(pathWithGz) || SPIFFS.exists(path))
+    if (SD.exists(pathWithGz) || SD.exists(path))
     {                                                       // If the file exists, either as a compressed archive, or normal
-        if (SPIFFS.exists(pathWithGz))                      // If there's a compressed version available
+        if (SD.exists(pathWithGz))                      // If there's a compressed version available
             path = pathWithGz;                              // Use the compressed verion
-        File file = SPIFFS.open(path, "r");                 // Open the file
+        File file = SD.open(path, "r");                 // Open the file
         size_t sent = server.streamFile(file, contentType); // Send it to the client
         file.close();                                       // Close the file again
         Serial.println(String("\tSent file: ") + path);
@@ -129,10 +119,12 @@ bool handleFileRead(String path)
     return false;
 }
 
+
 void handleFileUpload()
-{ // upload a new file to the SPIFFS
-    
+{ // upload a new file to the SD
+    static File fsUploadFile;
     HTTPUpload &upload = server.upload();
+ 
     if (upload.status == UPLOAD_FILE_START)
     {
         String filename = upload.filename;
@@ -140,7 +132,7 @@ void handleFileUpload()
             filename = "/" + filename;
         Serial.print("handleFileUpload Name: ");
         Serial.println(filename);
-        fsUploadFile = SPIFFS.open(filename, "w"); // Open the file for writing in SPIFFS (create if it doesn't exist)
+        fsUploadFile = SD.open(filename, "w"); // Open the file for writing in SD (create if it doesn't exist)
     }
     else if (upload.status == UPLOAD_FILE_WRITE)
     {

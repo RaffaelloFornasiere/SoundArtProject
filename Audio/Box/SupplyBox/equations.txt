@@ -1,0 +1,4 @@
+﻿"BoxLength"= 113
+"BoxWidth"= 81
+"D1@Sketch1"="BoxLength"
+"D2@Sketch1"="BoxWidth"

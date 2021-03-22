@@ -7,6 +7,7 @@
 #include <FTP.h>
 #include <ESP8266WiFi.h>
 #include <DNSServer.h>
+#include <ESP8266mDNS.h>
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -33,3 +34,4 @@ void handleSetLoop();
 void handleConnectTo();
 void hanldeClearWifiSettings();
 void SendBroadcastMessage(String message, int port);
+void handleSetNewWifi();

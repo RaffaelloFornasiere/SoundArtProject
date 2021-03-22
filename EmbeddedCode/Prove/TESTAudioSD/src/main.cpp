@@ -14,17 +14,19 @@ AudioOutputI2S *outI2s;
 AudioGeneratorMP3 *mp3;
 AudioFileSourceSD *sdFile;
 unsigned long int t;
+double gain = 0.10f;
 void setup()
 {
   Serial.begin(115200);
   Serial.println("");
   delay(1000);
   //SPIFFS.begin();
-  SD.begin(D2);
-  /*File f = SD.open("/pno-cs.mp3");
-  if(!f)
-    Serial.println("cant open file");*/
-  //file = new AudioFileSourceSPIFFS("/tone.mp3");
+   if (!SD.begin(D2))
+    {
+        Serial.println(F("SD ERROR"));
+        return;
+    }
+
   sdFile = new AudioFileSourceSD("/tone.mp3");
 
   if (!sdFile->isOpen())
@@ -38,10 +40,10 @@ void setup()
   //out->SetRate(128000);
   //
   if (mp3->begin(sdFile, outI2s))
-  
     Serial.println("all ok");
+    outI2s->SetOutputModeMono(true);
   //mp3->loop();
-  outI2s->SetGain(2.0);
+  outI2s->SetGain(gain);
   hc.begin();
   t = millis();
   hc.start();
@@ -66,7 +68,7 @@ void loop()
         if (mp3->begin(sdFile, outI2s))
 
           Serial.println("all ok");
-          outI2s->SetGain(2.0);
+          outI2s->SetGain(gain);
       }
     }
     hc.start();

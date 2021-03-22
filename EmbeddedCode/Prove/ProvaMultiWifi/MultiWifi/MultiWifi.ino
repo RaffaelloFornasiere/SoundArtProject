@@ -8,9 +8,9 @@ void setup() {
   delay(10);
   Serial.println('\n');
 
-  wifiMulti.addAP("ssid_from_AP_1", "your_password_for_AP_1");   // add Wi-Fi networks you want to connect to
-  wifiMulti.addAP("ssid_from_AP_2", "your_password_for_AP_2");
-  wifiMulti.addAP("ssid_from_AP_3", "your_password_for_AP_3");
+  wifiMulti.addAP("FASTWEB-NGCN3V", "G3P32AOH7L");   // add Wi-Fi networks you want to connect to
+  wifiMulti.addAP("AndroidS6", "q2345678");
+  wifiMulti.addAP("Martin Router King ", "98Raffaello");
 
   Serial.println("Connecting ...");
   int i = 0;

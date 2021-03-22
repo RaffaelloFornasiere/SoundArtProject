@@ -22,15 +22,25 @@ public:
     virtual bool SetLoop(bool on) = 0;
     virtual bool SetAudio(String audio) = 0;
     virtual bool Test() = 0;
+    virtual bool clearAudios() = 0;
 };
 
 class PhysicalDevice : public Device
 {
 public:
     PhysicalDevice(uint8_t trigPin = D3, uint8_t echoPin = D2)
-        : hc(trigPin, echoPin), loop(false), fileName("test.mp3") { hc.start(); }
-    bool SetVolume(int volume) override{outI2s.SetGain(volume/25.0); return true;}
-    bool SetLoop(bool on) override { loop = true; return true;}
+        : hc(trigPin, echoPin), loop(false), fileName("/Test/test.mp3") { hc.start(); }
+
+    bool SetVolume(int volume) override
+    {
+        outI2s.SetGain(volume / 25.0);
+        return true;
+    }
+    bool SetLoop(bool on) override
+    {
+        loop = true;
+        return true;
+    }
     bool SetAudio(String audio) override
     {
         if (mp3.isRunning())
@@ -40,23 +50,45 @@ public:
         fileName = audio;
         sdFile.open(fileName.c_str());
         return sdFile.isOpen();
-    };
-    bool Test()
+    }
+    bool Test() override
     {
         if (mp3.isRunning())
             mp3.stop();
         if (sdFile.isOpen())
             sdFile.close();
-        sdFile.open("test.mp3");
+        sdFile.open("/Test/test.mp3");
         mp3.begin(&sdFile, &outI2s);
-        while(mp3.isRunning())
+        while (mp3.isRunning())
         {
-            if(!mp3.loop())
+            if (!mp3.loop())
                 mp3.stop();
         }
         sdFile.close();
         sdFile.open(fileName.c_str());
         mp3.begin(&sdFile, &outI2s);
+        return true;
+    }
+
+    bool clearAudios() override
+    {
+        File file = SD.open("/");
+        file = file.openNextFile();
+        while (file)
+        {
+            while (file.isDirectory())
+                file = file.openNextFile();
+            String fName = file.name();
+            if (fName.endsWith(".mp3"))
+            {
+                file = file.openNextFile();
+                SD.remove(fName);
+            }
+            else
+            {
+                file = file.openNextFile();
+            }
+        }
         return true;
     }
 
@@ -73,7 +105,7 @@ public:
                 if (loop)
                 {
                     sdFile.close();
-                    sdFile.open("/tone.mp3");
+                    sdFile.open(fileName.c_str());
                     if (mp3.begin(&sdFile, &outI2s))
                         Serial.println("all ok");
                 }
@@ -103,32 +135,40 @@ public:
     }
     bool SetLoop(bool on) override
     {
-        return _send("setLoop:" + String(on));
+        return _send("setLoop:" + String((int)on));
     }
     bool SetAudio(String audio) override
     {
         WiFiClient client;
         client.connect(ip, port);
         client.connect(ip, port);
-        //bool res = client.connected();
+        bool res;
         if (client.connected())
         {
             client.print("file:" + audio);
             //delay(100)?
             String resp = client.readString();
-            if (resp == "exist")
-                return true;
-
-            File file = SD.open(audio, "r");
-            ftm.Send(ip, file);
-            return true;
+            if (resp == "notFound")
+            {
+                File file = SD.open(audio, "r");
+                ftm.Send(ip, file);
+                client.stop();
+                SetAudio(audio);
+            }
+            res = true;
         }
-        return false;
+        res = false;
+        client.stop();
+        return res;
     }
     bool Test() override
     {
         return _send("test");
-    };
+    }
+    bool clearAudios() override
+    {
+        return _send("clearAudios");
+    }
 
 private:
     bool _send(String msg)

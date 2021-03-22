@@ -58,6 +58,10 @@
                     <div class="collapse" id="addSoundCollapse">
                         <div class="card card-body">
                             <input class="form-control m2" type="file" id="aggiungiFormFile" />
+                            <div class="progress" id="progressBarDiv">
+                                <div class="progress-bar mt-1" id="UploadProgressBar" role="progressbar"
+                                    style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
                             <div class="row">
                                 <div class="col-md-4 col-lg-2">
                                     <button class="btn btn-primary mt-1 btn-block" onclick="UploadFile()">
@@ -110,7 +114,7 @@
                 text.textContent = "Device " + i;
                 let testButton = document.createElement("label"); testButton.type = "button";
                 testButton.className = "btn btn-primary col-3";
-                testButton.onclick = function () { SendXhrPOST("test/device=" + i); };
+                testButton.onclick = function () { SendXhrPOST("test?device=" + i); };
                 let testButtonIcon = document.createElement("i"); testButtonIcon.className = "material-icons";
                 testButtonIcon.textContent = "phonelink_ring";
                 testButton.appendChild(testButtonIcon);
@@ -128,7 +132,7 @@
 
                 let input = document.createElement("input");
                 input.type = "range"; input.id = "volumeRange" + i; input.className = "form-range col-8";
-                input.onchange = function () { SendXhrPOST("setVolume/device=" + i + "&volume=" + input.value); };
+                input.onchange = function () { SendXhrPOST("setVolume?device=" + i + "&volume=" + input.value); };
                 let value = document.createElement("span");
                 value.className = "badge bg-secondary col"; value.textContent = input.value;
                 input.oninput = function () { value.textContent = input.value; };
@@ -149,7 +153,7 @@
 
 
 
-                let dropdownItem = document.createElement("ul"); dropdownItem.className = "dropdown-menu";
+                let dropdownItem = document.createElement("ul"); dropdownItem.className = "dropdown-menu"; dropdownItem.id = "dropDownItem" + i;
                 dropdownItem.setAttribute("aria-labelledby", "dropdownMenuButton" + i);
                 for (let audio of audios) {
                     let li = document.createElement("li");
@@ -157,7 +161,7 @@
                     //alert("dropDownSoundList" + i + "Item" + audios[j].id)
                     li.className = "dropdown-item";
                     li.textContent = audio;// appendChild(document.createTextNode(audios[j]));
-                    li.onclick = function () { SendXhrPOST("setAudio/device=" + i + "&audio=" + audio); };
+                    li.onclick = function () { SendXhrPOST("setAudio?device=" + i + "&audio=" + audio); };
                     dropdownItem.appendChild(li);
                 }
 
@@ -170,7 +174,7 @@
                 let checkBox = document.createElement("input"); checkBox.className = "form-check-input"; checkBox.type = "checkbox";
                 checkBox.id = "flexCheckChecked" + i;
                 checkBox.onchange = function () {
-                    SendXhrPOST("setVolume/device=" + i + "&loop=" + (checkBox.checked ? "1" : "0"));
+                    SendXhrPOST("setVolume?device=" + i + "&loop=" + (checkBox.checked ? "1" : "0"));
                 };
                 let label = document.createElement("label"); label.className = "form-check-label"; label.setAttribute("for", "flexCheckChecked" + i);
                 label.textContent = "Loop";
@@ -216,7 +220,7 @@
 
                     }
                     audios.splice(audios.indexOf(audio), 1);
-                    SendXhrPOST("/deleteAudio/audio=" + audio);
+                    SendXhrPOST("deleteAudio?audio=" + audio);
                 }
                 liDelButton.textContent = "Elimina";
                 li.appendChild(liText); li.appendChild(liDelButton);
@@ -239,7 +243,29 @@
             let file = fileInput.files[0];
 
             let xhr = new XMLHttpRequest();
-            //xhr.upload.addEventListener('progress', onprogressHandler, false);
+            xhr.upload.addEventListener('progress', onprogressHandler, false);
+            /*xhr.addEventListener("load", function()
+            {
+                let i = document.getElementById("UploadProgressBar");
+                i.className += " bg-success"; i.textContent = "File caricato correttamente";
+            }, false);*/
+            xhr.onreadystatechange = function () {
+                console.log(this.readyState, this.status);
+                if (this.readyState == 4 && this.status == 200) {
+                    let i = document.getElementById("UploadProgressBar");
+                    i.className = "progress-bar mt-1 bg-success"; i.textContent = "File caricato correttamente";
+                    for (let j = 0; j < nOfDevices; j++) {
+                        let li = document.createElement("li");
+                        li.id = "dropDownSoundList" + j + file.name;
+                        li.className = "dropdown-item";
+                        li.textContent = file.name;
+                        li.onclick = function () { SendXhrPOST("setAudio?device=" + j + "&audio=" + audio); };
+                        let dropDownItem = document.getElementById("dropDownItem" + j)
+                        dropDownItem.appendChild(li);
+                    }
+                }
+
+            };
             xhr.open('POST', '/upload/uri', true);
 
             let formData = new FormData();
@@ -247,13 +273,21 @@
             xhr.send(formData);
 
         }
+        function onprogressHandler(evt) {
+            var percent = evt.loaded / evt.total * 100;
+            percent = percent.toFixed(2);
+            let progressBar = document.getElementById("UploadProgressBar");
+            progressBar.style = "width: " + percent + "%"; progressBar.setAttribute("aria-valuenow", percent);
+            progressBar.textContent = percent + "%";
+            progressBar.className = "progress-bar mt-1";
+        }
 
         //nOfDevices [DO NOT DELETE THIS COMMENT]
         var nOfDevices = 1;
-        var audios = ["audio1", "audio2", "audio3", "audio4"];
+        var audios = [];
         if (nOfDevices == 0) {
             let div = document.createElement("div");
-            document.body.appendChild (document.createTextNode("Nessun Dispositivo"));
+            document.body.appendChild(document.createTextNode("Nessun Dispositivo"));
             document.getElementById("volumesController").hidden = true;
         } else {
             CreateControls();
