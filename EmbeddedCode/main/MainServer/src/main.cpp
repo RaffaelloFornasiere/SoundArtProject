@@ -9,6 +9,71 @@ String webpage = "/index.html";
 std::vector<Device *> devices;
 PhysicalDevice device;
 
+bool EditFileLine(String filename, String content, String newContent)
+{
+    File file = SD.open(filename, "r");
+    File tmp = SD.open(filenmame + ".tmp", "w");
+    if (!file)
+        Serial.println("can't open file for editing");
+    String s = "";
+    while (s.indexOf(content) == -1)
+    {
+        tmp.print(s);
+        tmp.flush(); //
+        if (!file.available())
+        {
+            Serial.println("file finished");
+            return 0;
+        }
+        s = "";
+        char c = file.peek();
+        while (c != '\n' && file.available())
+        {
+            c = file.read();
+            if (c != '\r')
+                s += c;
+            c = file.peek();
+        }
+        file.read();
+        s += "\n";
+    }
+    //Serial.println("found place");
+    tmp.println(newContent);
+
+    s = file.readString();
+    tmp.print(s);
+    Serial.println("remaining: " + s);
+    tmp.close();
+    file.close();
+
+    SD.remove(filename);
+
+    file = SD.open(filename, "w");
+    tmp = SD.open(filename + ".tmp", "r");
+    while (tmp.available())
+    {
+        s = "";
+        char c = tmp.peek();
+        while (c != '\n' && tmp.available())
+        {
+            c = tmp.read();
+            if (c != '\r')
+                s += c;
+            c = tmp.peek();
+        }
+        tmp.read();
+        s += "\n";
+
+        file.print(s);
+
+        file.flush();
+    }
+    tmp.close();
+    file.close();
+    Serial.println("file modified");
+    return 1;
+}
+
 void setup()
 {
     //INITIALIZER
@@ -35,7 +100,7 @@ void setup()
         for (auto i : nets)
             Serial.print(i + "   ---   ");
         Serial.println("");*/
-
+        /*
         File file = SD.open("credentials.html", "r");
         File tmp = SD.open("credentials.tmp", "w");
         if (!file)
@@ -58,11 +123,9 @@ void setup()
                 if (c != '\r')
                     s += c;
                 c = file.peek();
-
             }
             file.read();
             s += "\n";
-
         }
         Serial.println("found place to put wifis");
 
@@ -102,6 +165,13 @@ void setup()
         tmp.close();
         file.close();
         Serial.println("file modified");
+        */
+       
+        String newLine = "var wifis = [";
+        for (size_t i = 0; i < nets.size() - 1; i++)
+            newLine += '\"' + nets[i] + '\"' + String(", ");
+        newLine += '\"' + nets.back() + "\"];";
+        EditFileLine("credentials.html", "var wifis", newLine);
 
         wifiManager.SetAPMode(IPAddress(1, 2, 3, 4));
         webpage = "credentials.html";
