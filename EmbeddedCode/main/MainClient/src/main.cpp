@@ -3,7 +3,7 @@
 #define NO_CONTENT_204 204
 #define THIS_DEVICE 0
 
-MWiFiManager wifiManager("/ap.txt");
+MWiFiManager wifiManager("/ap.cred");
 
 uint16_t commPort = 8000;
 WiFiServer server(commPort);
@@ -16,12 +16,6 @@ void setup()
     Serial.begin(500000);
     Serial.println("");
     Serial.println("SoundArt Project");
-
-    /*if (!SPIFFS.begin())
-    {
-        Serial.println(F("SPIFFS ERROR"));
-        return;
-    }*/
 
     // SD INIT
     if (!SD.begin(D2))

@@ -9,7 +9,7 @@ std::vector<APCred> MWiFiManager::GetAPFromSD()
     }
 
     File file = SD.open(filename, "r");
-    Serial.println("WiFIManager opening file: " + filename);
+    //Serial.println("WiFIManager opening file: " + filename);
     if (!file)
     {
         Serial.println(F("WIFIMANAGER_ERROR_OPENING_FILE"));
@@ -22,7 +22,7 @@ std::vector<APCred> MWiFiManager::GetAPFromSD()
     {
         APCred aux;
         aux.FromStream(file);
-        Serial.println("ssid: " + aux.ssid + " - psw: " + aux.psw);
+        //Serial.println("ssid: " + aux.ssid + " - psw: " + aux.psw);
         if (aux != APCred())
             storedNets.emplace_back(aux.ssid, aux.psw);
     }
@@ -33,69 +33,78 @@ std::vector<APCred> MWiFiManager::GetAPFromSD()
               });
     return storedNets;
 }
-std::vector<APCred> MWiFiManager::AvailableAPs()
+// std::vector<String> MWiFiManager::AvailableNetworks()
+// {
+//     WiFi.mode(WIFI_STA);
+//     // really needed?
+//     WiFi.disconnect();
+//     size_t n = WiFi.scanNetworks();
+//     std::vector<String> res;
+//     res.reserve(n);
+//     for (size_t i = 0; i < n; i++)
+//     {
+//         res.push_back(WiFi.SSID(i));
+//         res.back().trim();
+//     }
+//     WiFi.scanDelete();
+
+//     return res;
+// }
+// std::vector<APCred> MWiFiManager::AvailableAPs()
+// {
+//     std::vector<String> availableNetsStr = AvailableNetworks();
+//     std::vector<APCred> availableNets(availableNetsStr.size());
+//     for (size_t i = 0; i < availableNets.size(); i++)
+//         availableNets[i].ssid = availableNetsStr[i];
+//     std::sort(availableNets.begin(), availableNets.end(),
+//               [](const APCred &ap1, const APCred &ap2) {
+//                   return ap1.ssid < ap2.ssid;
+//               });
+//     return availableNets;
+// }
+
+std::vector<std::pair<APCred, int>> MWiFiManager::ScanWifis()
 {
-    std::vector<String> availableNetsStr = AvailableNetworks();
-    std::vector<APCred> availableNets(availableNetsStr.size());
-    for (size_t i = 0; i < availableNets.size(); i++)
-        availableNets[i].ssid = availableNetsStr[i];
-    std::sort(availableNets.begin(), availableNets.end(),
-              [](const APCred ap1, const APCred ap2) {
-                  return ap1.ssid < ap2.ssid;
-              });
-    return availableNets;
+    size_t n = WiFi.scanNetworks();
+    std::vector<std::pair<APCred, int>> res(n);
+    for (size_t i = 0; i < n; i++)
+        res[i] = std::make_pair(APCred(WiFi.SSID(i), ""), WiFi.RSSI(i));
+    std::sort(res.begin(), res.end(), [](const std::pair<APCred, int> &w1, const std::pair<APCred, int> &w2) {
+        return w1.second > w1.second;
+    });
+    return res;
 }
 
 bool MWiFiManager::Connect()
 {
     connected = false;
+
     std::vector<APCred> storedNets = GetAPFromSD();
-    std::vector<APCred> availableNets = AvailableAPs();
+    Serial.println("storedNets: ");
+    std::for_each(storedNets.begin(), storedNets.end(), [](const APCred &ap) {
+        Serial.println("--> SSID: " + ap.toString());
+    });
+    Serial.println("\n");
 
+    std::vector<std::pair<APCred, int>> scan = ScanWifis();
     Serial.println("available nets: ");
-    std::for_each(availableNets.begin(), availableNets.end(), [](APCred &ap) { Serial.print(ap.toString()); });
+    std::for_each(scan.begin(), scan.end(), [](const std::pair<APCred, int> &ap) {
+        Serial.println("--> SSID: " + ap.first.toString() + " RSSI: " + String(ap.second));
+    });
     Serial.println("");
 
-    std::vector<APCred> intersection;
-    std::set_intersection(storedNets.begin(), storedNets.end(),
-                          availableNets.begin(), availableNets.end(),
-                          std::back_inserter(intersection),
-                          [](const APCred &ap1, const APCred &ap2) {
-                              return ap1.ssid < ap2.ssid;
-                          });
-
-    Serial.println("intersection nets: ");
-    std::for_each(intersection.begin(), intersection.end(), [](const APCred &ap) { Serial.println(" -> " + ap.toString()); });
-    Serial.println("");
-
-    std::vector<std::pair<APCred, int>> pairs;
-    pairs.reserve(intersection.size());
-    for (auto &i : intersection)
+    for (auto i : scan)
     {
-        if (TryConnect(i.ssid, i.psw))
-            pairs.push_back(std::make_pair(i, WiFi.RSSI()));
-        // else
-        //     DeleteAPFromSD(i);
+        APCred ap = *std::find_if(storedNets.begin(), storedNets.end(), [&](const APCred &ap) {
+            return i.first.ssid == ap.ssid;
+        });
+        if ((connected = TryConnect(ap)))
+            break;
     }
-    auto it = std::max_element(pairs.begin(), pairs.end(),
-                               [](const std::pair<APCred, int> &ap1, const std::pair<APCred, int> &ap2) {
-                                   return ap1.second < ap2.second;
-                               });
-    APCred bestAP;
-    if (it != pairs.end() && it->first != APCred())
-    {
-        Serial.println("best ap found");
-        bestAP = it->first;
-        connected = TryConnect(bestAP);
-        if (connected)
-        {
-            Serial.println('\n');
-            Serial.println("Connected to ");
-            Serial.println(WiFi.SSID());
-            Serial.println("IP address:\t");
-            Serial.println(WiFi.localIP());
-        }
-    }
+
+    if (connected)
+        Serial.println("Connected to: " + WiFi.SSID() + ", IP: " + WiFi.localIP().toString()+ "\n");
+
     return connected;
 }
 
@@ -110,22 +119,6 @@ void MWiFiManager::SetAPMode(IPAddress ip)
     delay(1000);
 }
 
-std::vector<String> MWiFiManager::AvailableNetworks()
-{
-    WiFi.mode(WIFI_STA);
-    WiFi.disconnect();
-    size_t n = WiFi.scanNetworks();
-    std::vector<String> res;
-    res.reserve(n);
-    for (size_t i = 0; i < n; i++)
-    {
-        res.push_back(WiFi.SSID(i));
-        res.back().trim();
-    }
-    WiFi.scanDelete();
-
-    return res;
-}
 void MWiFiManager::ClearAll()
 {
     File root = SD.open("/");

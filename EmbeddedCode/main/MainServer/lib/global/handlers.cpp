@@ -312,12 +312,12 @@ bool PrepareIndexPage(int nOfDevices)
 bool PrepareCredentialsPage()
 {
     bool res;
-    std::vector<String> nets = wifiManager.AvailableNetworks();
+    std::vector<std::pair<APCred, int>> nets = wifiManager.ScanWifis();
 
     String newLine = "var wifis = [";
     for (size_t i = 0; i < nets.size() - 1; i++)
-        newLine += '\"' + nets[i] + '\"' + String(", ");
-    newLine += '\"' + nets.back() + "\"];";
+        newLine += '\"' + nets[i].first.ssid + '\"' + String(", ");
+    newLine += '\"' + nets.back().first.ssid + "\"];";
     res = EditFileLine("credentials.html", "var wifis", newLine);
 
     wifiManager.SetAPMode(IPAddress(1, 2, 3, 4));
@@ -369,6 +369,7 @@ std::vector<IPAddress> FindDevices(uint16_t udpPort)
     {
         if (udpServer.parsePacket() && udpServer.available())
         {
+            Serial.println("i've got packet");
             //if(udpServer.readStrin().indexOf("soundArtClientReply") >= 0)
             if (udpServer.readStringUntil('\n') == "soundArtClientReply")
                 if (std::find(clients.begin(), clients.end(), udpServer.remoteIP()) == clients.end())

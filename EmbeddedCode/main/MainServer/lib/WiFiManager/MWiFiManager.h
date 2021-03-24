@@ -69,8 +69,9 @@ public:
     void SetSTAMode(IPAddress ip);
     void ClearAll();
 
-    std::vector<APCred> AvailableAPs();
-    std::vector<String> AvailableNetworks();
+    // std::vector<APCred> AvailableAPs();
+    // std::vector<String> AvailableNetworks();
+    std::vector<std::pair<APCred, int>> ScanWifis();
 
 private:
     void DeleteAPFromSD(const APCred &ap);

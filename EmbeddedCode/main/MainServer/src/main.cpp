@@ -1,8 +1,6 @@
 #include <global.h>
 
 
-#define NO_CONTENT_204 204
-#define THIS_DEVICE 0
 
 ESP8266WebServer server(80);
 MWiFiManager wifiManager("/ap.cred");
@@ -34,6 +32,7 @@ void setup()
         Serial.println("non connected, ");
         webpage = "credentials.html";
     }
+
     SetupDevices();
     PrepareWebPage();
     setupHandlers();
