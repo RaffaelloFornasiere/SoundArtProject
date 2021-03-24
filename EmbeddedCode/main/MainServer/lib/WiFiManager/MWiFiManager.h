@@ -64,8 +64,7 @@ public:
     bool TryConnect(const String &ssid, const String &psw);
     bool TryConnect(APCred &ap) { return TryConnect(ap.ssid, ap.psw); }
 
-    void SetAPMode();
-    void SetAPMode(IPAddress ip);
+    void SetAPMode(IPAddress ip = IPAddress(1,2,3,4));
     void SetSTAMode(IPAddress ip);
     void ClearAll();
 

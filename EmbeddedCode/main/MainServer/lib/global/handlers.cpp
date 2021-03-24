@@ -335,6 +335,7 @@ bool PrepareWebPage()
     }
     else if(webpage == "credentials.html")
     {
+        wifiManager.SetAPMode();
         res = PrepareCredentialsPage();
     }
     return res; 
@@ -365,6 +366,7 @@ std::vector<IPAddress> FindDevices(uint16_t udpPort)
     SendBroadcastMessage(message, udpPort);
     unsigned long time = millis();
 
+    Serial.println("start waiting for devices [UDP]");
     while ((millis() - time < 10000))
     {
         if (udpServer.parsePacket() && udpServer.available())
@@ -380,5 +382,6 @@ std::vector<IPAddress> FindDevices(uint16_t udpPort)
                 udpServer.read();
         }
     }
+    Serial.println("stop waiting for devices [UDP]");
     return clients;
 }

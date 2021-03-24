@@ -33,7 +33,6 @@ void setup()
         webpage = "credentials.html";
     }
 
-    SetupDevices();
     PrepareWebPage();
     setupHandlers();
     server.begin();

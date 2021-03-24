@@ -40,8 +40,7 @@ void setup()
         commPort = udp.readString().toInt();
         udp.beginPacket(src.toString().c_str(), commPort);
 
-        String message = "client:" +
-                         WiFi.localIP().toString();
+        String message = "soundArtClientReply";
         Serial.println("sending:" + message);
         udp.print(message);
         udp.endPacket();
