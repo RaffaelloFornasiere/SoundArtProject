@@ -56,18 +56,16 @@ bool MWiFiManager::Connect()
     std::for_each(availableNets.begin(), availableNets.end(), [](APCred &ap) { Serial.print(ap.toString()); });
     Serial.println("");
 
-    std::vector<APCred> intersection; 
+    std::vector<APCred> intersection;
     std::set_intersection(storedNets.begin(), storedNets.end(),
                           availableNets.begin(), availableNets.end(),
                           std::back_inserter(intersection),
                           [](const APCred &ap1, const APCred &ap2) {
-
                               return ap1.ssid < ap2.ssid;
                           });
-    
 
     Serial.println("intersection nets: ");
-    std::for_each(intersection.begin(), intersection.end(), [](const APCred &ap) { Serial.println(" -> " + ap.toString());});
+    std::for_each(intersection.begin(), intersection.end(), [](const APCred &ap) { Serial.println(" -> " + ap.toString()); });
     Serial.println("");
 
     std::vector<std::pair<APCred, int>> pairs;
@@ -124,34 +122,33 @@ std::vector<String> MWiFiManager::AvailableNetworks()
         res.push_back(WiFi.SSID(i));
         res.back().trim();
     }
-
+    WiFi.scanDelete();
 
     return res;
 }
 void MWiFiManager::ClearAll()
 {
-    File file = SD.open("/");
-    file = file.openNextFile();
+    File root = SD.open("/");
+    File file = file.openNextFile();
     while (file)
     {
         while (file.isDirectory())
-            file = file.openNextFile();
+        {
+            file.close();
+            file = root.openNextFile();
+        }
+
         String fName = file.name();
+        file.close();
+        file = root.openNextFile();
         if (fName.endsWith(".cred"))
-        {
-            file = file.openNextFile();
             SD.remove(fName);
-        }
-        else
-        {
-            file = file.openNextFile();
-        }
     }
 }
 WiFiComp MWiFiManager::SearchAPInSD(const APCred &ap)
 {
     File file = SD.open(filename, "r");
-    Serial.println("WiFIManager opening file: " + filename);
+    //Serial.println("WiFIManager opening file: " + filename);
     if (!file)
     {
         Serial.println(F("WIFIMANAGER_ERROR_OPENING_FILE"));
@@ -195,7 +192,7 @@ void MWiFiManager::DeleteAPFromSD(const APCred &ap)
     File file = SD.open(filename, "w");
     for (auto i : nets)
     {
-        if(i.ssid != ap.ssid)
+        if (i.ssid != ap.ssid)
         {
             file.print(ap.ssid + '\n');
             file.print(ap.psw + '\n');

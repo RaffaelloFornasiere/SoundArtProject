@@ -13,7 +13,7 @@ PhysicalDevice device;
 void setup()
 {
     //INITIALIZER
-    Serial.begin(115200);
+    Serial.begin(500000);
     Serial.println("");
     Serial.println("SoundArt Project");
 
@@ -35,7 +35,7 @@ void setup()
     WiFiUDP udp;
     udp.begin(commPort);
     WiFiClient client;
-    while (!udp.parseFloat())
+    while (!udp.parsePacket())
         ;
 
     String s = udp.readStringUntil(':');
@@ -62,7 +62,7 @@ void setup()
     server.begin(commPort);
 }
 
-void loop()
+void loop()              
 {
     WiFiClient client = server.available();
     if (client)

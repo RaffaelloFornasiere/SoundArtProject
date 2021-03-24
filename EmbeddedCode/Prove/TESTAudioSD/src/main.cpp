@@ -17,7 +17,7 @@ unsigned long int t;
 double gain = 0.10f;
 void setup()
 {
-  Serial.begin(115200);
+  Serial.begin(500000);
   Serial.println("");
   delay(1000);
   //SPIFFS.begin();
@@ -63,6 +63,7 @@ void loop()
         Serial.println("finito");
         sdFile->close();
         sdFile->open("/tone.mp3");
+        
         Serial.println("file aperto nuovamente");
 
         if (mp3->begin(sdFile, outI2s))

@@ -22,6 +22,8 @@ extern ESP8266WebServer server;
 extern MWiFiManager wifiManager;
 extern String webpage;
 extern std::vector<Device *> devices;
+extern PhysicalDevice device;
+
 
 String getContentType(String filename);
 bool handleFileRead(String path);
@@ -33,5 +35,16 @@ void handleSetAudio();
 void handleSetLoop();
 void handleConnectTo();
 void hanldeClearWifiSettings();
-void SendBroadcastMessage(String message, int port);
 void handleSetNewWifi();
+void setupHandlers();
+
+
+
+
+void SendBroadcastMessage(String message, int port);
+bool EditFileLine(String filename, String content, String newContent);
+bool SetupDevices();
+bool PrepareWebPage();
+bool PrepareIndexPage(int nOfDevices);
+bool PrepareCredentialsPage();
+std::vector<IPAddress> FindDevices(uint16_t);

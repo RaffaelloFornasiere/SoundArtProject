@@ -49,7 +49,7 @@
             <div class="card card-body col-10">
                 <ul class="list-group" id="audioList">
 
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <li class="list-group-item d-flex justify-content-between align-items-center" id = "aggiungiLi">
                         <h5>Aggiungi Audio</h5>
                         <button class="btn btn-light btn-sm" type="button" data-toggle="collapse"
                             data-target="#addSoundCollapse" aria-expanded="false" aria-controls="addSoundCollapse">
@@ -114,7 +114,7 @@
                 text.textContent = "Device " + i;
                 let testButton = document.createElement("label"); testButton.type = "button";
                 testButton.className = "btn btn-primary col-3";
-                testButton.onclick = function () { SendXhrPOST("test?device=" + i); };
+                testButton.onclick = function () { SendXhrPOST("testDevice?device=" + i); };
                 let testButtonIcon = document.createElement("i"); testButtonIcon.className = "material-icons";
                 testButtonIcon.textContent = "phonelink_ring";
                 testButton.appendChild(testButtonIcon);
@@ -155,15 +155,7 @@
 
                 let dropdownItem = document.createElement("ul"); dropdownItem.className = "dropdown-menu"; dropdownItem.id = "dropDownItem" + i;
                 dropdownItem.setAttribute("aria-labelledby", "dropdownMenuButton" + i);
-                for (let audio of audios) {
-                    let li = document.createElement("li");
-                    li.id = "dropDownSoundList" + i + audio;
-                    //alert("dropDownSoundList" + i + "Item" + audios[j].id)
-                    li.className = "dropdown-item";
-                    li.textContent = audio;// appendChild(document.createTextNode(audios[j]));
-                    li.onclick = function () { SendXhrPOST("setAudio?device=" + i + "&audio=" + audio); };
-                    dropdownItem.appendChild(li);
-                }
+
 
                 dropDownDiv.appendChild(dropdownItem);
 
@@ -174,7 +166,7 @@
                 let checkBox = document.createElement("input"); checkBox.className = "form-check-input"; checkBox.type = "checkbox";
                 checkBox.id = "flexCheckChecked" + i;
                 checkBox.onchange = function () {
-                    SendXhrPOST("setVolume?device=" + i + "&loop=" + (checkBox.checked ? "1" : "0"));
+                    SendXhrPOST("setLoop?device=" + i + "&loop=" + (checkBox.checked ? "1" : "0"));
                 };
                 let label = document.createElement("label"); label.className = "form-check-label"; label.setAttribute("for", "flexCheckChecked" + i);
                 label.textContent = "Loop";
@@ -189,37 +181,31 @@
 
         function CreateSettings() {
             let audioList = document.getElementById("audioList");
-
+            //console.log("create settings");
             for (let audio of audios) {
+               // console.log("\t", audio);
                 let li = document.createElement("li");
                 li.className = "list-group-item d-flex justify-content-between align-items-center";
                 let liText = document.createElement("h5"); liText.textContent = audio;
-                //liText.contentEditable = true;
-                //liText.onclose = function() {alert("diocan");}
-                //let divButtons = document.createElement("div");
-                //divButtons.className = "btn-group"; divButtons.setAttribute("role", "group"); 
-                //li.appendChild(divButtons);
 
-                /*
-                <div class="btn-group" role="group" aria-label="Basic example">
-                            <button type="button" class="btn btn-secondary">Modifica</button>
-                            <button type="button" class="btn btn-danger">Elimina</button>
-                </div>
-                */
                 let liDelButton = document.createElement("button"); liDelButton.className = "btn btn-danger btn-sm";
                 liDelButton.onclick = function () {
-                    li.remove();
-
+                    //console.log(audio);
+                    
+                    
                     for (let j = 0; j < nOfDevices; j++) {
-                        let aux = $("#dropDownSoundList" + j + audio);
+                        let aux = document.getElementById("dropDownSoundList" + j + audio);
+                        //console.log(aux);
                         //alert("dropDownSoundList" + j + " " + audio + " i: " + audios.indexOf(audio));
-                        if (aux.text() == audio) {
+                        //console.log(aux, audio);
+                        if (aux.textContent == audio) {
                             //alert("deleting " + audio + " for list " + j );
                             aux.remove();
                         }
 
                     }
                     audios.splice(audios.indexOf(audio), 1);
+                    li.remove();
                     SendXhrPOST("deleteAudio?audio=" + audio);
                 }
                 liDelButton.textContent = "Elimina";
@@ -231,6 +217,37 @@
 
         }
 
+       
+
+        function UpdateAudios()
+        {
+            let audioList = document.getElementById("audioList");
+            let array = [];
+            for(let li of audioList.children)
+                if(li.id == "")
+                    array.push(li); 
+            for(let i of array)
+                i.remove();
+
+            
+            CreateSettings();
+
+
+            for (let device = 0; device < nOfDevices; device++)
+            {
+                let dropDownItem = document.getElementById("dropDownItem" + device)
+                dropDownItem.innerHTML = "";
+                for (let audio of audios) {
+                    let li = document.createElement("li");
+                    li.id = "dropDownSoundList" + device + audio;
+                    li.className = "dropdown-item";
+                    li.textContent = audio;
+                    li.onclick = function () { SendXhrPOST("setAudio?device=" + device + "&audio=" + audio); };
+                    dropDownItem.appendChild(li);
+                }
+            }
+
+        }
         function SendXhrPOST(str) {
             let xhr = new XMLHttpRequest();
             xhr.open('POST', str, true);
@@ -250,19 +267,11 @@
                 i.className += " bg-success"; i.textContent = "File caricato correttamente";
             }, false);*/
             xhr.onreadystatechange = function () {
-                console.log(this.readyState, this.status);
+                //console.log(this.readyState, this.status);
                 if (this.readyState == 4 && this.status == 200) {
-                    let i = document.getElementById("UploadProgressBar");
-                    i.className = "progress-bar mt-1 bg-success"; i.textContent = "File caricato correttamente";
-                    for (let j = 0; j < nOfDevices; j++) {
-                        let li = document.createElement("li");
-                        li.id = "dropDownSoundList" + j + file.name;
-                        li.className = "dropdown-item";
-                        li.textContent = file.name;
-                        li.onclick = function () { SendXhrPOST("setAudio?device=" + j + "&audio=" + audio); };
-                        let dropDownItem = document.getElementById("dropDownItem" + j)
-                        dropDownItem.appendChild(li);
-                    }
+                    audios = Array.from(new Set(audios).add(file.name));
+                    console.log(audios);
+                    UpdateAudios();
                 }
 
             };
@@ -283,15 +292,15 @@
         }
 
         //nOfDevices [DO NOT DELETE THIS COMMENT]
-        var nOfDevices = 1;
-        var audios = [];
+        var nOfDevices = 2;
+        var audios = ["audio1", "audio2"];
         if (nOfDevices == 0) {
             let div = document.createElement("div");
             document.body.appendChild(document.createTextNode("Nessun Dispositivo"));
             document.getElementById("volumesController").hidden = true;
         } else {
             CreateControls();
-            CreateSettings();
+            UpdateAudios();
         }
     </script>
 </body>
