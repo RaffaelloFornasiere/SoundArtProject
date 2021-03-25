@@ -18,8 +18,10 @@ bool PhysicalDevice::SetAudio(String audio)
     if (sdFile.isOpen())
         sdFile.close();
     fileName = audio;
-    sdFile.open(fileName.c_str());
-    mp3.begin(&sdFile, &outI2s);
+    
+    if (sdFile.open(fileName.c_str()))
+        mp3.begin(&sdFile, &outI2s);
+
     return sdFile.isOpen();
 }
 
@@ -105,24 +107,31 @@ void PhysicalDevice::Run()
 
 bool RemoteDevice::SetVolume(int volume)
 {
+    Serial.println("RemoteDevice::SetVolume");
     return _send("setVolume:" + String(volume));
 }
 
 bool RemoteDevice::SetAudio(String audio)
 {
-    WiFiClient client;
-    client.connect(ip, port);
+    Serial.println("RemoteDevice::SetAudio");
     client.connect(ip, port);
     bool res;
     if (client.connected())
     {
         client.print("file:" + audio);
-        //delay(100)?
+        // wait for checking
+        delay(1000);
         String resp = client.readString();
         if (resp == "notFound")
         {
+            Serial.println("sending file");
             File file = SD.open(audio, "r");
-            ftm.Send(ip, file);
+            if(!file)
+            {
+                Serial.println("can't open file to send");
+                return false;
+            }
+            ftm.Send(ip, FileTransferManager::FileTransferPort, file);
             client.stop();
             SetAudio(audio);
         }
@@ -135,15 +144,18 @@ bool RemoteDevice::SetAudio(String audio)
 
 bool RemoteDevice::SetLoop(bool loop)
 {
+    Serial.println("RemoteDevice::SetLoop");
     return _send("setLoop:" + String(loop));
 }
 
 bool RemoteDevice::Test()
 {
+    Serial.println("RemoteDevice::SetATestudio");
     return _send("test");
 }
 
 bool RemoteDevice::clearAudios()
 {
+    Serial.println("RemoteDevice::clearAudios");
     return _send("clearAudios");
 }

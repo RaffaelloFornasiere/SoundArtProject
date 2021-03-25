@@ -5,6 +5,7 @@
 #include <ESP8266WebServer.h>
 #include <vector>
 #include <algorithm>
+#include <SD.h>
 #include "../lib/FileTransfer/FileTransfer.h"
 
 int port = 8888; //Port number
@@ -36,12 +37,12 @@ void handleFileUpload();                // upload a new file to the SPIFFS
 
 void setup()
 {
-    Serial.begin(921600);
+    Serial.begin(500000);
     //pinMode(SendKey, INPUT_PULLUP); //Btn to send data
     Serial.println();
-    if (!SPIFFS.begin())
+    if (!SD.begin(D2))
     {
-        Serial.println("An Error has occurred while mounting SPIFFS");
+        Serial.println(F("SD ERROR"));
         return;
     }
 
@@ -129,7 +130,7 @@ void loop()
 
        
 
-            File f = SPIFFS.open("/tone.mp3", "r");
+            File f = SD.open("/test.mp3", "r");
             Serial.println("begin: ");
             long unsigned time = millis();
             ftm.Send("192.168.0.240", 8000, f);

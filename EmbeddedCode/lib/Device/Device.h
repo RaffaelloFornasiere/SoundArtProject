@@ -60,13 +60,14 @@ public:
 private:
     bool _send(String msg)
     {
-        WiFiClient client;
-        client.connect(ip, port);
         client.connect(ip, port);
         bool res = client.connected();
         if (res)
             if (client.print(msg) != msg.length())
                 res = 0;
+        Serial.println("_send() conn: " + String(res));
+        Serial.println("_send() err: " + String(client.getWriteError()));
+        
         client.stop();
         return res;
     }

@@ -1,10 +1,11 @@
 #include "FileTransfer.h"
 
+
 //Sends file to remote device if connected
-size_t FileTransferManager::Send(IPAddress remoteIp,  Stream &stream)
+size_t FileTransferManager::Send(IPAddress remoteIp, uint16_t remotePort, Stream &stream)
 {
-    client.connect(remoteIp, port);
-    size_t s = 0;
+    client.connect(remoteIp, remotePort);
+    size_t sent = 0;
     if (client.connected())
     {
         while (stream.available())
@@ -16,38 +17,36 @@ size_t FileTransferManager::Send(IPAddress remoteIp,  Stream &stream)
             char *pc = c;
 
             Serial.println("readed:" + String(stream.readBytes(c, toSend)));
-            s = client.write(c, toSend);
-
-            s = 0;
+            size_t s = 0;
             while (s != toSend)
             {
                 pc = &c[s];
                 s += client.write(pc, toSend - s);
                 client.flush();
                 Serial.println("sent: " + String(s));
+                sent += s;
             }
         }
     }
     client.stop();
-    return s;
+    return sent;
 }
 // ****************************************************************************
 
 //reads the incoming file and returns the size of the file
-size_t FileTransferManager::Read(Stream &stream)
+size_t FileTransferManager::Read(Stream &file)
 {
 
     client = server.available();
     size_t bytes = 0;
     if (client)
     {
-        //Serial.println("begin receiving");
-        while (client.connected())
+        Serial.println("begin receiving");
+        while (client.connected())    
             while (client.available())
-                bytes += stream.write(client.read());
-            
-        
-        //Serial.println("file received");
+                bytes += file.write(client.read());
+
+        Serial.println("file received");
     }
     return bytes;
 }

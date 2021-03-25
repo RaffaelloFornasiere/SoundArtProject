@@ -29,10 +29,9 @@ int count = 0;
 void setup()
 {
 
-    Serial.begin(1000000);
+    Serial.begin(500000);
     pinMode(SendKey, INPUT_PULLUP); //Btn to send data
     Serial.println();
-    SPIFFS.begin();
 
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password); //Connect to wifi
@@ -74,6 +73,7 @@ void setup()
 
 FileTransferManager ftm(8000);
 WiFiClient client;
+bool received = 0;
 void loop()
 {
     //WiFiClient client; /*= server.available();
@@ -98,15 +98,32 @@ void loop()
         }
     }
 */
-    File f = SD.open("/tone.mp3", "w");
-    if (!f)
+    if (!received)
     {
-        Serial.println("can't open file");
-        return;
+        File f = SD.open("/test.mp3", "w");
+        if (!f)
+        {
+            Serial.println("can't open file");
+            return;
+        }
+        else
+        {
+            
+            received = ftm.Read(f);
+        }
+        f.close();
+
+        if (received)
+        {
+            f = SD.open("/test.mp3");
+            if (!f)
+            {
+                Serial.println("can't open file");
+                return;
+            }
+            else
+                Serial.println(f.size());
+        }
+        
     }
-    else
-    {
-        ftm.Read(f);
-    }
-    f.close();
 }
