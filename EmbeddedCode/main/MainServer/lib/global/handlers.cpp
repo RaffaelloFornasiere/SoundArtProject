@@ -201,6 +201,13 @@ void SendBroadcastMessage(String message, uint16_t port)
 
 bool EditFileLine(String filename, String content, String newContent)
 {
+    std::vector<String> vContent = {content};
+    std::vector<String> vNewContent = {newContent};
+    return EditFileLines(filename, vContent, vNewContent);    
+}
+
+bool EditFileLines(String filename, std::vector<String> content, std::vector<String> newContent)
+{
     File file = SD.open(filename, "r");
     File tmp = SD.open(filename + ".tmp", "w");
     if (!file)
@@ -208,74 +215,79 @@ bool EditFileLine(String filename, String content, String newContent)
         Serial.println("can't open file for editing");
         return 0;
     }
-    String s = "";
-    while (s.indexOf(content) == -1)
+    
+    for (size_t i = 0; i < content.size(); i++)
     {
-        tmp.print(s);
-        tmp.flush(); //
-        if (!file.available())
+        String s = "";
+        while (s.indexOf(content[i]) == -1)
         {
-            Serial.println("file finished");
-            return 0;
+            tmp.print(s);
+            if (!file.available())
+            {
+                Serial.println("file finished");
+                return 0;
+            }
+            s = "";
+            char c = file.read();
+            while (c != '\n' && file.available())
+            {
+                if (c != '\r')
+                    s += c;
+                c = file.read();
+            }
+            s += c;
         }
-        s = "";
-        char c = file.peek();
-        while (c != '\n' && file.available())
-        {
-            c = file.read();
-            if (c != '\r')
-                s += c;
-            c = file.peek();
-        }
-        file.read();
-        s += "\n";
+        tmp.println(newContent[i]);
+        //Serial.println("replacement n°" + String(i));
     }
-    tmp.println(newContent);
-
-    s = file.readString();
-    tmp.print(s);
-    //Serial.println("remaining: " + s);
+    tmp.print(file.readString());
+    //Serial.println(tmp.getWriteError());
     tmp.close();
     file.close();
-
-    file = SD.open(filename, "w");
-    tmp = SD.open(filename + ".tmp", "r");
-    while (tmp.available())
-    {
-        s = "";
-        char c = tmp.peek();
-        while (c != '\n' && tmp.available())
-        {
-            c = tmp.read();
-            if (c != '\r')
-                s += c;
-            c = tmp.peek();
-        }
-        tmp.read();
-        s += "\n";
-
-        file.print(s);
-
-        file.flush();
-    }
-    tmp.close();
-    file.close();
+    copyFile(filename + ".tmp", filename);
+        
 
     if (!SD.remove("/" + filename + ".tmp"))
         Serial.println("cant find file to be deleted");
     return 1;
 }
 
+bool copyFile(String src, String dst)
+{
+    File file = SD.open(dst, "w");
+    File tmp = SD.open(src, "r");
+    if (!tmp)
+    {
+        Serial.println("can't open file for copying");
+        return 0;
+    }
+    String s = ""; 
+    while (tmp.available())
+    {
+        s = "";
+        char c = tmp.read();
+        while (c != '\n' && tmp.available())
+        {
+            if (c != '\r')
+                s += c;
+            c = tmp.read();
+        }
+        s += c;
+
+        file.print(s);
+    }
+    tmp.close();
+    file.close();
+    return true;
+}
+
 bool PrepareIndexPage(int nOfDevices)
 {
     bool res = 1;
     //Serial.println("nOfDevices: " + String(clients.size() + 1));
-    if (EditFileLine("index.html", "var nOfDevices", "var nOfDevices = " + String(nOfDevices) + ";"))
-        Serial.println("index.html: nOfDevices updated");
-    else
-        res = 0;
+    std::vector<String> replacements(2);
+    replacements[0] = "var nOfDevices = " + String(nOfDevices) + ";";
 
-    //Serial.println("parsing sd card");
     File root = SD.open("/");
     std::vector<String> audios;
     //Serial.println("root: " + String(root.name()));
@@ -294,17 +306,16 @@ bool PrepareIndexPage(int nOfDevices)
     }
 
     //Serial.println("edit index.html adding " + String(audios.size()) + " mp3s");
-    String newLine = "var audios = [";
+    replacements[1] = "var audios = [";
     if (audios.size())
     {
         for (size_t i = 0; i < audios.size() - 1; i++)
-            newLine += '\"' + audios[i] + "\",";
-        newLine += '\"' + audios.back() + "\"];";
-        if (EditFileLine("index.html", "var audios", newLine))
-            Serial.println("index.html: var audios updated");
-        else
-            res = 0;
+            replacements[1] += '\"' + audios[i] + "\",";
+        replacements[1] += '\"' + audios.back() + "\"];";
     }
+    std::vector<String> oldContet = {"var nOfDevices", "var audios"};
+    res = EditFileLines("index.html", oldContet, replacements);
+    //Serial.println(res ? "Success" : "Failure");
 
     return res;
 }
@@ -346,8 +357,8 @@ bool SetupDevices()
     std::vector<IPAddress> clients = FindDevices(udpPort);
     devices.resize(clients.size() + 1, nullptr);
     devices[0] = &device;
-    for (size_t i = 1; i < clients.size()+1; i++)
-        devices[i] = new RemoteDevice(clients[i-1], udpPort);
+    for (size_t i = 1; i < clients.size() + 1; i++)
+        devices[i] = new RemoteDevice(clients[i - 1], udpPort);
 
     return true;
 }
@@ -358,12 +369,16 @@ std::vector<IPAddress> FindDevices(uint16_t udpPort)
     WiFiUDP udpServer;
     udpServer.begin(udpPort);
     String message = "SoundArtCheckUp:" + String(udpPort);
-    SendBroadcastMessage(message, udpPort);
-    unsigned long time = millis();
-
-    Serial.println("start waiting for devices [UDP]");
-    while ((millis() - time < 10000))
+    unsigned long t1 = millis();
+    unsigned long t2 = millis() - 2000;
+    Serial.println("start checking for devices [UDP]");
+    while ((millis() - t1) < 4900)
     {
+        if ((millis() - t2) > 2000)
+        {
+            t2 = millis();
+            SendBroadcastMessage(message, udpPort);
+        }
         if (udpServer.parsePacket())
         {
 
@@ -372,7 +387,10 @@ std::vector<IPAddress> FindDevices(uint16_t udpPort)
             {
                 if (udpServer.readStringUntil('\n') == "soundArtClientReply")
                     if (std::find(clients.begin(), clients.end(), udpServer.remoteIP()) == clients.end())
+                    {
                         clients.push_back(udpServer.remoteIP());
+                        Serial.println("new client");
+                    }
 
                 //discard other characters
                 while (udpServer.available())

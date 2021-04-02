@@ -21,7 +21,7 @@ size_t FileTransferManager::Send(IPAddress remoteIp, uint16_t remotePort, Stream
             {
                 pc = &c[s];
                 s += client.write(pc, toSend - s);
-                client.flush();
+                //client.flush();
                 Serial.println("sent: " + String(s));
                 sent += s;
             }

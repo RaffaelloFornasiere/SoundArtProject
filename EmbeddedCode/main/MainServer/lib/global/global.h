@@ -43,8 +43,10 @@ void setupHandlers();
 
 void SendBroadcastMessage(String message, uint16_t port);
 bool EditFileLine(String filename, String content, String newContent);
+bool EditFileLines(String filename, std::vector<String> content, std::vector<String> newContent);
+bool copyFile(String src, String dst);
 bool SetupDevices();
 bool PrepareWebPage();
-bool PrepareIndexPage(int nOfDevices);
+bool PrepareIndexPage2(int nOfDevices);
 bool PrepareCredentialsPage();
 std::vector<IPAddress> FindDevices(uint16_t);

@@ -15,7 +15,7 @@ void setup()
     //INITIALIZER
     Serial.begin(500000);
     Serial.println("");
-    Serial.println("SoundArt Project");
+    Serial.println("SoundArt Project Client");
 
     // SD INIT
     if (!SD.begin(D2))
@@ -32,6 +32,14 @@ void setup()
 
 void loop()
 {
+    if (Serial.available())
+    {
+        if (Serial.read() == 'r')
+            ESP.reset();
+        while (Serial.available())
+            Serial.read();
+    }
+
     if (udp.parsePacket())
     {
         String s = udp.readStringUntil(':');
@@ -55,30 +63,50 @@ void loop()
         }
     }
     WiFiClient client = server.available();
-    if (client)
+    while (client.connected())
     {
-        Serial.println("new cmd");
-        String cmd = client.readStringUntil(':');
-        Serial.println(cmd);
-        int fileE = 0;
-        if (cmd == "setVolume")
-            device.SetVolume(client.readString().toInt());
-        else if (cmd == "setLoop")
-            device.SetLoop(client.readString().toInt());
-        else if (cmd == "file")
+        //client.setNoDelay(true);
+        if (client.available())
         {
-            fileE = device.SetAudio("/" + client.readString());
-            if (fileE == 0)
-            {
-                client.print("notFound");
-                File file = SD.open(client.readString(), "w");
-                ftm.Read(file);
-            }
-        }
-        else if (cmd == "test")
-            device.Test();
+            String cmd = "";
+            while (client.available())
+                cmd += static_cast<char>(client.read());
+            Serial.println(cmd);
 
-        client.stop();
+            int fileE = 0;
+            if (cmd.indexOf("setVolume") >= 0)
+                device.SetVolume(cmd.substring(cmd.indexOf(":") + 1).toInt());
+            else if (cmd.indexOf("setLopp") >= 0)
+                device.SetLoop(cmd.substring(cmd.indexOf(":") + 1).toInt());
+            else if (cmd.indexOf("file") >= 0)
+            {
+                String fileName = cmd.substring(cmd.indexOf(":") + 1);
+                fileE = device.SetAudio("/" + fileName);
+                Serial.println("fileE: " + String(fileE));
+                if (fileE == 0)
+                {
+                    Serial.println("notFound");
+                    client.print("notFound");
+                    
+                    if (client.connected())
+                    {
+                        File file = SD.open(fileName, "w");
+                        if (!file)
+                            Serial.println("can't open file for write");
+                        ftm.ReadFrom(client, file);
+                    }
+                    else
+                    {
+                        Serial.println("error");
+                    }
+
+                }
+                else
+                    client.print("ok");
+            }
+            else if (cmd.indexOf("test") >= 0)
+                device.Test();
+        }
     }
     device.Run();
 }

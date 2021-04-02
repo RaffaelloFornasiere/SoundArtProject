@@ -14,7 +14,16 @@ void setup()
     //INITIALIZER
     Serial.begin(500000);
     Serial.println("");
-    Serial.println("SoundArt Project");
+    Serial.println("SoundArt Project Server");
+
+
+/*    String reset = ESP.getResetInfo();
+    Serial.println(reset);
+    if(reset != "Software/System restart")
+    {
+        ESP.restart();
+    }
+*/
 
     // SD INIT
     if (!SD.begin(D2))
@@ -41,6 +50,12 @@ void setup()
 
 void loop()
 {
+    if(Serial.available())
+    {
+        if(Serial.read() == 'r');
+            ESP.reset();
+        while(Serial.available()) Serial.read();
+    }
     server.handleClient();
     device.Run();
 }

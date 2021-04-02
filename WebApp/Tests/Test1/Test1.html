@@ -26,6 +26,7 @@
         integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
         crossorigin="anonymous"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
 
 
     <title>SoundArt WebApp</title>
@@ -49,7 +50,7 @@
             <div class="card card-body col-10">
                 <ul class="list-group" id="audioList">
 
-                    <li class="list-group-item d-flex justify-content-between align-items-center" id = "aggiungiLi">
+                    <li class="list-group-item d-flex justify-content-between align-items-center" id="aggiungiLi">
                         <h5>Aggiungi Audio</h5>
                         <button class="btn btn-light btn-sm" type="button" data-toggle="collapse"
                             data-target="#addSoundCollapse" aria-expanded="false" aria-controls="addSoundCollapse">
@@ -75,6 +76,7 @@
             </div>
         </div>
 
+
     </div>
 
 
@@ -91,11 +93,10 @@
 
 
                 let maincol1 = document.createElement("div");
-                maincol1.className = "col-8 align-self-center";
+                maincol1.className = "col-7 align-self-center";
                 let maincol2 = document.createElement("div");
-                maincol2.className = "col-2 align-self-center";
-                let maincol3 = document.createElement("div");
-                maincol3.className = "col align-self-center";
+                maincol2.className = "col align-self-center";
+
 
 
 
@@ -103,7 +104,7 @@
                 row.className = "row";
                 maincol1.appendChild(row);
 
-                box.appendChild(maincol1); box.appendChild(maincol2); box.appendChild(maincol3);
+                box.appendChild(maincol1); box.appendChild(maincol2);
 
 
 
@@ -128,8 +129,6 @@
                 col2.className = "col";
                 row.appendChild(col1); row.appendChild(col2);
 
-
-
                 let input = document.createElement("input");
                 input.type = "range"; input.id = "volumeRange" + i; input.className = "form-range col-8";
                 input.onchange = function () { SendXhrPOST("setVolume?device=" + i + "&volume=" + input.value); };
@@ -140,29 +139,24 @@
 
 
 
-                /* maincol2 */
-                let dropDownDiv = document.createElement("div"); dropDownDiv.className = "dropdown";
-                maincol2.appendChild(dropDownDiv);
+                // maincol2
+                // div
+                let settingsDropDown = document.createElement("div"); settingsDropDown.className = "dropdown";
+                maincol2.appendChild(settingsDropDown);
 
-                let sButton = document.createElement("button");
-                sButton.type = "button"; sButton.className = "btn btn-secondary dropdown-toggle"; sButton.textContent = "Suono";
-                sButton.setAttribute("data-bs-toggle", "dropdown"); sButton.setAttribute("aria-expanded", "false");
-                sButton.id = "dropdownMenuButton" + i;
-                dropDownDiv.appendChild(sButton);
+                //button
+                let settingsButton = document.createElement("button");
+                settingsButton.type = "button"; settingsButton.className = "btn btn-secondary dropdown";
+                let settingsIcon = document.createElement("span"); settingsIcon.className = "material-icons nopadding";
+                settingsIcon.textContent = "settings"; settingsButton.appendChild(settingsIcon);
+                settingsButton.setAttribute("data-bs-toggle", "dropdown"); settingsButton.setAttribute("aria-expanded", "false");
+                settingsButton.id = "dropdownMenuButton" + i; settingsDropDown.appendChild(settingsButton);
 
+                //div dropdown
+                let settingsDropDownDiv = document.createElement("ul"); settingsDropDownDiv.className = "dropdown-menu "; settingsDropDownDiv.id = "dropDownItem" + i;
+                settingsDropDownDiv.setAttribute("aria-labelledby", "dropdownMenuButton" + i); settingsDropDown.appendChild(settingsDropDownDiv);
 
-
-
-                let dropdownItem = document.createElement("ul"); dropdownItem.className = "dropdown-menu"; dropdownItem.id = "dropDownItem" + i;
-                dropdownItem.setAttribute("aria-labelledby", "dropdownMenuButton" + i);
-
-
-                dropDownDiv.appendChild(dropdownItem);
-
-
-
-                /*maincol3*/
-                let checkBoxForm = document.createElement("div"); checkBoxForm.className = "form-check";
+                let checkBoxForm = document.createElement("div"); checkBoxForm.className = "form-check mx-3";
                 let checkBox = document.createElement("input"); checkBox.className = "form-check-input"; checkBox.type = "checkbox";
                 checkBox.id = "flexCheckChecked" + i;
                 checkBox.onchange = function () {
@@ -171,7 +165,39 @@
                 let label = document.createElement("label"); label.className = "form-check-label"; label.setAttribute("for", "flexCheckChecked" + i);
                 label.textContent = "Loop";
                 checkBoxForm.appendChild(checkBox); checkBoxForm.appendChild(label);
-                maincol3.appendChild(checkBoxForm);
+                settingsDropDownDiv.appendChild(checkBoxForm);
+
+                let divider1 = document.createElement("div"); divider1.className = "dropdown-divider";
+                settingsDropDownDiv.appendChild(divider1);
+
+                
+                
+                let inputNumberHeader = document.createElement("h6"); inputNumberHeader.className = "drowpdown-header mx-3";
+                inputNumberHeader.textContent="distanza rilevabile [m]";
+                settingsDropDownDiv.appendChild(inputNumberHeader);
+
+                let inputNumberDiv = document.createElement("div"); inputNumberDiv.className = "row mx-3";
+                let inputNumber = document.createElement("input"); inputNumber.type = 'range'; inputNumber.className = "form-range col-5";
+                inputNumber.max = "3"; inputNumber.min = "0.3"; inputNumber.step = "0.1";
+                inputNumber.id = "inputNumber" + i;
+                inputNumber.onchange = function () { SendXhrPOST("setDistance?device=" + i + "&dist=" + inputNumber.value); };
+                let distValue = document.createElement("span");
+                distValue.className = "badge bg-secondary col-4 mx-2"; distValue.textContent = inputNumber.value + "m";
+                inputNumber.oninput = function () { distValue.textContent = inputNumber.value + " m"; }
+
+                inputNumberDiv.appendChild(inputNumber); inputNumberDiv.appendChild(distValue);
+
+                settingsDropDownDiv.appendChild(inputNumberDiv);
+
+
+
+
+                let divider = document.createElement("div"); divider.className = "dropdown-divider";
+                settingsDropDownDiv.appendChild(divider);
+                let audioHeader = document.createElement("h6"); audioHeader.className = "drowpdown-header mx-3";
+                audioHeader.textContent="Audio:";
+                settingsDropDownDiv.appendChild(audioHeader);
+
 
             }
         }
@@ -183,7 +209,7 @@
             let audioList = document.getElementById("audioList");
             //console.log("create settings");
             for (let audio of audios) {
-               // console.log("\t", audio);
+                // console.log("\t", audio);
                 let li = document.createElement("li");
                 li.className = "list-group-item d-flex justify-content-between align-items-center";
                 let liText = document.createElement("h5"); liText.textContent = audio;
@@ -191,8 +217,8 @@
                 let liDelButton = document.createElement("button"); liDelButton.className = "btn btn-danger btn-sm";
                 liDelButton.onclick = function () {
                     //console.log(audio);
-                    
-                    
+
+
                     for (let j = 0; j < nOfDevices; j++) {
                         let aux = document.getElementById("dropDownSoundList" + j + audio);
                         //console.log(aux);
@@ -217,26 +243,30 @@
 
         }
 
-       
 
-        function UpdateAudios()
-        {
+
+        function UpdateAudios() {
             let audioList = document.getElementById("audioList");
             let array = [];
-            for(let li of audioList.children)
-                if(li.id == "")
-                    array.push(li); 
-            for(let i of array)
+            for (let li of audioList.children)
+                if (li.id == "")
+                    array.push(li);
+            for (let i of array)
                 i.remove();
 
-            
+
             CreateSettings();
 
 
-            for (let device = 0; device < nOfDevices; device++)
-            {
+            for (let device = 0; device < nOfDevices; device++) {
                 let dropDownItem = document.getElementById("dropDownItem" + device)
-                dropDownItem.innerHTML = "";
+
+                for (let li of dropDownItem.children)
+                    if (li.id.includes("dropDownSoundList"))
+                        array.push(li);
+                for (let i of array)
+                    i.remove();
+
                 for (let audio of audios) {
                     let li = document.createElement("li");
                     li.id = "dropDownSoundList" + device + audio;

@@ -19,8 +19,8 @@ WiFiUDP udp;
 HTTPUpload up;
 
 //Server connect to WiFi Network
-const char *ssid = "FASTWEB-NGCN3V";
-const char *password = "G3P32AOH7L"; //Enter your wifi Password
+const char *ssid = "AndroidS6";
+const char *password = "q2345678"; //Enter your wifi Password
 
 int count = 0;
 //=======================================================================
@@ -64,6 +64,7 @@ void setup()
     Serial.println("initialization done.");
 
     server.begin();
+    
 
     udp.begin(udpPort);
 }
@@ -98,6 +99,7 @@ void loop()
         }
     }
 */
+
     if (!received)
     {
         File f = SD.open("/test.mp3", "w");

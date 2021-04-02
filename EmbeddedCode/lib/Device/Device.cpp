@@ -18,32 +18,41 @@ bool PhysicalDevice::SetAudio(String audio)
     if (sdFile.isOpen())
         sdFile.close();
     fileName = audio;
-    
+
     if (sdFile.open(fileName.c_str()))
         mp3.begin(&sdFile, &outI2s);
-
     return sdFile.isOpen();
 }
 
 bool PhysicalDevice::Test()
 {
     Serial.println("PhysicalDevice::Test");
-    if (mp3.isRunning())
+    size_t pos = 0;
+    if (mp3.isRunning() || sdFile.isOpen())
+    {
+        pos = sdFile.getPos();
         mp3.stop();
-    if (sdFile.isOpen())
         sdFile.close();
-    if (!sdFile.open("/test/test.mp3"))
+    }
+
+    if (!sdFile.open("/Test/test.mp3"))
+    {
+        Serial.println("can't opern test file");
         return false;
+    }
     mp3.begin(&sdFile, &outI2s);
+    Serial.println("test begin");
     while (mp3.isRunning())
     {
         if (!mp3.loop())
             mp3.stop();
     }
-
+    Serial.println("test finished");
     sdFile.close();
     sdFile.open(fileName.c_str());
     mp3.begin(&sdFile, &outI2s);
+    sdFile.seek(pos, SEEK_SET);
+
     return true;
 }
 
@@ -120,20 +129,27 @@ bool RemoteDevice::SetAudio(String audio)
     {
         client.print("file:" + audio);
         // wait for checking
-        delay(1000);
-        String resp = client.readString();
-        if (resp == "notFound")
+        while (!client.available())
+            ;
+        String resp;
+        while (client.available())
+            resp += static_cast<char>(client.read());
+        if (resp.indexOf("notFound") >= 0)
         {
             Serial.println("sending file");
             File file = SD.open(audio, "r");
-            if(!file)
+            if (!file)
             {
                 Serial.println("can't open file to send");
                 return false;
             }
-            ftm.Send(ip, FileTransferManager::FileTransferPort, file);
-            client.stop();
-            SetAudio(audio);
+            clock_t t = millis();
+            size_t sent = ftm.SendWith(client, file);
+            Serial.println("sent: " + String(sent) + " : " + String(file.size()));
+            Serial.println("t: " + String(sent));
+            if (sent != file.size())
+                return false;
+
         }
         res = true;
     }

@@ -57,6 +57,7 @@ void loop()
     double dist = hc.getRange();
     if (dist < 20)
     {
+      Serial.println("a");
       if (!mp3->loop())
       {
         mp3->stop();

@@ -4,4 +4,5 @@
 .gcc-flags.json
 .pio
 Audio/
+*.xlsx
 

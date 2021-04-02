@@ -14,8 +14,8 @@ ESP8266WebServer server(80);
 WiFiUDP udp;
 
 //Server connect to WiFi Network
-const char *ssid = "FASTWEB-NGCN3V";
-const char *password = "G3P32AOH7L"; //Enter your wifi Password
+const char *ssid = "AndroidS6";
+const char *password = "q2345678"; //Enter your wifi Password
 
 void SendBroadcastMessage(String message, int port)
 {
@@ -130,10 +130,10 @@ void loop()
 
        
 
-            File f = SD.open("/test.mp3", "r");
+            File f = SD.open("/tone.mp3", "r");
             Serial.println("begin: ");
             long unsigned time = millis();
-            ftm.Send("192.168.0.240", 8000, f);
+            ftm.Send("192.168.43.100", 8000, f);
             Serial.println("Sent in: " + String(millis() - time) + " ms");
 
     }
