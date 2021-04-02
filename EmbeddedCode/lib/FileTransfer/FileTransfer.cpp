@@ -45,43 +45,38 @@ size_t FileTransferManager::Send(Stream &stream)
     clock_t packetTimeout = 3000;
     if (client.connected())
     {
+
         int i = 0;
-        size_t size = 0;
         clock_t t = millis();
+
+        size_t os = 0;
+        buffLen = 500;
         while (stream.available())
         {
-            /*size_t toSend = std::min(buffLen, size_t(stream.available()));
-            Serial.println("Pending: " + String(stream.available()));
+            char c[buffLen];
+            char *pc = c;
+            size_t toSend = std::min(buffLen, size_t(stream.available()));
+            //Serial.println("Pending: " + String(stream.available()));
             //Serial.println(" to send: " + String(toSend));
-        
+
             stream.readBytes(c, toSend);
             size_t s = 0;
-            clock_t t = millis();
-            while ((s != toSend) && (millis() - t < packetTimeout))
+            while (s != toSend)
             {
                 pc = &c[s];
                 s += client.write(pc, toSend - s);
-                //
-                //Serial.println("sent: " + String(s));
                 sent += s;
-            }*/
-            if (millis() - t > 1000)
-            {
-                Serial.println(String(i) + " B/s");
-                size += i;
-                t = millis();
-                i = 0;
-            }
-            else
-            {
-                i++;
             }
 
-            client.write(stream.read());
-            //client.flush();
+            if ((millis() - t) > 1000)
+            {
+                Serial.println(String(sent - os) + " B/s with bufflen: " + String(buffLen));
+                os = sent;
+                t = millis();
+            }
         }
     }
-    return size;
+    return sent;
 }
 
 // ****************************************************************************

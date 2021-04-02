@@ -191,12 +191,12 @@ void setupHandlers()
 void SendBroadcastMessage(String message, uint16_t port)
 {
     WiFiUDP udp; //udp.begin(port);
-    Serial.println("port: " + String(port));
+    //Serial.println("port: " + String(port));
     udp.beginPacket("255.255.255.255", port);
-    Serial.println("Sending: " + message);
+    //Serial.println("Sending: " + message);
     size_t payload = udp.write(message.c_str());
     udp.endPacket();
-    Serial.println("bytes sent: " + String(payload));
+    //Serial.println("bytes sent: " + String(payload));
 }
 
 bool EditFileLine(String filename, String content, String newContent)
@@ -372,9 +372,9 @@ std::vector<IPAddress> FindDevices(uint16_t udpPort)
     unsigned long t1 = millis();
     unsigned long t2 = millis() - 2000;
     Serial.println("start checking for devices [UDP]");
-    while ((millis() - t1) < 4900)
+    while ((millis() - t1) < 2000)
     {
-        if ((millis() - t2) > 2000)
+        if ((millis() - t2) > 100)
         {
             t2 = millis();
             SendBroadcastMessage(message, udpPort);
@@ -382,7 +382,7 @@ std::vector<IPAddress> FindDevices(uint16_t udpPort)
         if (udpServer.parsePacket())
         {
 
-            Serial.println("i've got packet");
+            //Serial.println("i've got packet");
             if (udpServer.available())
             {
                 if (udpServer.readStringUntil('\n') == "soundArtClientReply")
