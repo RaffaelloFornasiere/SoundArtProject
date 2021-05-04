@@ -12,8 +12,9 @@ void handleDeleteAudio()
 {
     String s = "Delte audio: " + String(server.arg("audio"));
     Serial.println(s);
-    int res = SD.remove("/" + server.arg("audio"));
-    server.send(res ? 200 : 500);
+    for(auto& i : devices)
+        i->DeleteAudio(server.arg("audio"));
+    server.send(200);
 }
 
 void handleTestDevice()
@@ -37,8 +38,21 @@ void handleSetLoop()
 {
     String s = "Set loop: device " + String(server.arg("device").toInt()) + " loop " + String(server.arg("loop").toInt());
     Serial.println(s);
+    
     int res = devices[server.arg("device").toInt()]
                   ->SetLoop(server.arg("loop").toInt());
+    server.send(res ? 200 : 500);
+    
+}
+
+
+void handleSetDistance()
+{
+    String s = "Set distance: device " + String(server.arg("device").toInt()) + " distance " + String(server.arg("dist").toFloat()*100);
+    Serial.println(s);
+    
+    int res = devices[server.arg("device").toInt()]
+                  ->SetDistance(server.arg("dist").toFloat()*100);
     server.send(res ? 200 : 500);
 }
 
@@ -53,6 +67,7 @@ void handleConnectTo()
         webpage = "/index.html";
         wifiManager.SetNewWiFi(ssid, psw);
     }
+    
 
     server.send(res ? 200 : 1001, "text/plain", WiFi.localIP().toString().c_str());
 }
@@ -68,6 +83,13 @@ void handleSetNewWifi()
     Serial.println("setting new wifi: ");
     wifiManager.SetNewWiFi(server.arg("ssid"), server.arg("psw"));
     server.send(200);
+}
+
+void handleScanDevices()
+{
+    Serial.println("scanDevices ");
+    PrepareWebPage();
+    server.sendHeader("Location","/"); 
 }
 
 String getContentType(String filename)
@@ -158,6 +180,8 @@ void handleFileUpload()
     }
 }
 
+
+
 void setupHandlers()
 {
     // handlers linking
@@ -167,6 +191,7 @@ void setupHandlers()
     server.on("/setAudio", HTTP_POST, handleSetAudio);
     server.on("/setLoop", HTTP_POST, handleSetLoop);
     server.on("/connectTo", HTTP_POST, handleConnectTo);
+    server.on("/setDistance", HTTP_POST, handleSetDistance);
     server.on("/ipreq", HTTP_GET, [] {
         String msg = "connected to: " + WiFi.SSID() + " on ip: " +
                      WiFi.localIP().toString();
@@ -174,6 +199,8 @@ void setupHandlers()
     });
     server.on("/setNewWifi", HTTP_POST, handleSetNewWifi);
     server.on("/clearWifiSettings", HTTP_POST, hanldeClearWifiSettings);
+    server.on("/scanDevices", HTTP_POST, handleScanDevices);
+    
     server.on(
         "/upload/uri", HTTP_POST, // if the client posts to the upload page
         []() { server.send(200); },
@@ -194,7 +221,8 @@ void SendBroadcastMessage(String message, uint16_t port)
     //Serial.println("port: " + String(port));
     udp.beginPacket("255.255.255.255", port);
     //Serial.println("Sending: " + message);
-    size_t payload = udp.write(message.c_str());
+    //size_t payload = 
+    udp.write(message.c_str());
     udp.endPacket();
     //Serial.println("bytes sent: " + String(payload));
 }
@@ -261,14 +289,15 @@ bool copyFile(String src, String dst)
         Serial.println("can't open file for copying");
         return 0;
     }
-    String s = ""; 
+    String s = "";
+     
     while (tmp.available())
     {
         s = "";
         char c = tmp.read();
         while (c != '\n' && tmp.available())
         {
-            if (c != '\r')
+            //if (c != '\r')
                 s += c;
             c = tmp.read();
         }
@@ -278,6 +307,7 @@ bool copyFile(String src, String dst)
     }
     tmp.close();
     file.close();
+
     return true;
 }
 
@@ -345,7 +375,6 @@ bool PrepareWebPage()
     }
     else if (webpage == "credentials.html")
     {
-        wifiManager.SetAPMode();
         res = PrepareCredentialsPage();
     }
     return res;
@@ -370,9 +399,9 @@ std::vector<IPAddress> FindDevices(uint16_t udpPort)
     udpServer.begin(udpPort);
     String message = "SoundArtCheckUp:" + String(udpPort);
     unsigned long t1 = millis();
-    unsigned long t2 = millis() - 2000;
+    unsigned long t2 = 0;
     Serial.println("start checking for devices [UDP]");
-    while ((millis() - t1) < 2000)
+    while ((millis() - t1) < 6000)
     {
         if ((millis() - t2) > 100)
         {

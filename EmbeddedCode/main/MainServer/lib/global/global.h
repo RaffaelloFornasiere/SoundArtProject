@@ -18,6 +18,8 @@
 #include <SD.h>
 
 
+
+
 extern ESP8266WebServer server;
 extern MWiFiManager wifiManager;
 extern String webpage;
@@ -33,12 +35,12 @@ void handleDeleteAudio();
 void handleTestDevice();
 void handleSetAudio();
 void handleSetLoop();
+void handleSetDistance();
 void handleConnectTo();
 void hanldeClearWifiSettings();
 void handleSetNewWifi();
+void handleScanDevices();
 void setupHandlers();
-
-
 
 
 void SendBroadcastMessage(String message, uint16_t port);
@@ -47,6 +49,6 @@ bool EditFileLines(String filename, std::vector<String> content, std::vector<Str
 bool copyFile(String src, String dst);
 bool SetupDevices();
 bool PrepareWebPage();
-bool PrepareIndexPage2(int nOfDevices);
+bool PrepareIndexPage(int nOfDevices);
 bool PrepareCredentialsPage();
 std::vector<IPAddress> FindDevices(uint16_t);

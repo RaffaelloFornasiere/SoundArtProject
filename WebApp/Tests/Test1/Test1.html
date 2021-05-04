@@ -26,7 +26,7 @@
         integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
         crossorigin="anonymous"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    
+
 
 
     <title>SoundArt WebApp</title>
@@ -41,15 +41,17 @@
 
         <div class="row m-2 align-middle">
             <h3 class="col-3 m-2">Volumi</h3>
-            <button class="btn btn-primary col-5" type="button" data-toggle="collapse" data-target="#collapseExample"
+            <button class="btn btn-primary " type="button" data-toggle="collapse" data-target="#collapseExample"
                 aria-expanded="false" aria-controls="collapseExample">
                 Impostazioni
             </button>
         </div>
         <div class="collapse m-2" id="collapseExample">
             <div class="card card-body col-10">
+                <button class="btn btn-primary btn-sm" type="button" onclick="SendXhrPOST('scanDevices')">
+                    Rileva Dispositivi
+                </button>
                 <ul class="list-group" id="audioList">
-
                     <li class="list-group-item d-flex justify-content-between align-items-center" id="aggiungiLi">
                         <h5>Aggiungi Audio</h5>
                         <button class="btn btn-light btn-sm" type="button" data-toggle="collapse"
@@ -77,6 +79,16 @@
         </div>
 
 
+    </div>
+
+    <div class="modal " id="blockAppliactionDialog" tabindex="-1" role="status" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content" style="background-color: transparent; border-width:0;">
+                <div class="container pt-4 px-5" style="color:white; font-size:large">
+                    <h3>Wait a moment..</h3>
+                </div>
+            </div>
+        </div>
     </div>
 
 
@@ -115,7 +127,7 @@
                 text.textContent = "Device " + i;
                 let testButton = document.createElement("label"); testButton.type = "button";
                 testButton.className = "btn btn-primary col-3";
-                testButton.onclick = function () { SendXhrPOST("testDevice?device=" + i); };
+                testButton.onclick = function () { SendBlockingXhrPOST("testDevice?device=" + i); };
                 let testButtonIcon = document.createElement("i"); testButtonIcon.className = "material-icons";
                 testButtonIcon.textContent = "phonelink_ring";
                 testButton.appendChild(testButtonIcon);
@@ -170,24 +182,24 @@
                 let divider1 = document.createElement("div"); divider1.className = "dropdown-divider";
                 settingsDropDownDiv.appendChild(divider1);
 
-                
-                
-                let inputNumberHeader = document.createElement("h6"); inputNumberHeader.className = "drowpdown-header mx-3";
-                inputNumberHeader.textContent="distanza rilevabile [m]";
+
+
+                /*let inputNumberHeader = document.createElement("h6"); inputNumberHeader.className = "drowpdown-header mx-3";
+                inputNumberHeader.textContent = "distanza rilevabile [m]";
                 settingsDropDownDiv.appendChild(inputNumberHeader);
 
                 let inputNumberDiv = document.createElement("div"); inputNumberDiv.className = "row mx-3";
                 let inputNumber = document.createElement("input"); inputNumber.type = 'range'; inputNumber.className = "form-range col-5";
                 inputNumber.max = "3"; inputNumber.min = "0.3"; inputNumber.step = "0.1";
                 inputNumber.id = "inputNumber" + i;
-                inputNumber.onchange = function () { SendXhrPOST("setDistance?device=" + i + "&dist=" + inputNumber.value); };
+                //inputNumber.onchange = function () { SendXhrPOST("setDistance?device=" + i + "&dist=" + inputNumber.value); };
                 let distValue = document.createElement("span");
                 distValue.className = "badge bg-secondary col-4 mx-2"; distValue.textContent = inputNumber.value + "m";
                 inputNumber.oninput = function () { distValue.textContent = inputNumber.value + " m"; }
 
                 inputNumberDiv.appendChild(inputNumber); inputNumberDiv.appendChild(distValue);
 
-                settingsDropDownDiv.appendChild(inputNumberDiv);
+                settingsDropDownDiv.appendChild(inputNumberDiv);*/
 
 
 
@@ -195,7 +207,7 @@
                 let divider = document.createElement("div"); divider.className = "dropdown-divider";
                 settingsDropDownDiv.appendChild(divider);
                 let audioHeader = document.createElement("h6"); audioHeader.className = "drowpdown-header mx-3";
-                audioHeader.textContent="Audio:";
+                audioHeader.textContent = "Audio:";
                 settingsDropDownDiv.appendChild(audioHeader);
 
 
@@ -272,7 +284,7 @@
                     li.id = "dropDownSoundList" + device + audio;
                     li.className = "dropdown-item";
                     li.textContent = audio;
-                    li.onclick = function () { SendXhrPOST("setAudio?device=" + device + "&audio=" + audio); };
+                    li.onclick = function () { SendBlockingXhrPOST("setAudio?device=" + device + "&audio=" + audio); };
                     dropDownItem.appendChild(li);
                 }
             }
@@ -283,6 +295,23 @@
             xhr.open('POST', str, true);
             xhr.send();
         }
+        function SendBlockingXhrPOST(str) {
+            let xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function () {
+                if (this.readyState == 4)
+                    UnblockUI();
+                if (this.readyState == 4 && this.status == 200) {
+                    audios = Array.from(new Set(audios).add(file.name));
+                    console.log(audios);
+                    UpdateAudios();
+                }
+            }
+            xhr.open('POST', str, true);
+            xhr.send();
+            BlockUI();
+        }
+
+
 
         function UploadFile() {
 
@@ -321,9 +350,27 @@
             progressBar.className = "progress-bar mt-1";
         }
 
+
+
+        function BlockUI() {
+            this.$('#blockAppliactionDialog').modal({
+                backdrop: 'static',
+                keyboard: false
+            });
+            $('#blockAppliactionDialog').modal('show');
+            //console.log("lock");
+        }
+
+        function UnblockUI() {
+            this.$('#blockAppliactionDialog').modal('hide');
+            // console.log("unlock");
+        }
+
+
         //nOfDevices [DO NOT DELETE THIS COMMENT]
         var nOfDevices = 2;
         var audios = ["audio1", "audio2"];
+        
         if (nOfDevices == 0) {
             let div = document.createElement("div");
             document.body.appendChild(document.createTextNode("Nessun Dispositivo"));
@@ -331,7 +378,14 @@
         } else {
             CreateControls();
             UpdateAudios();
+            setTimeout(function(){}, 2000);
+            for (let i = 0; i < nOfDevices; i++)
+                SendXhrPOST("setDistance?device=" + i + "&dist=70");
         }
+
+
+
+
     </script>
 </body>
 

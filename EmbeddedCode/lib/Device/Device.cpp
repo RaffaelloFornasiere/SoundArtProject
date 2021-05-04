@@ -17,6 +17,7 @@ bool PhysicalDevice::SetAudio(String audio)
         mp3.stop();
     if (sdFile.isOpen())
         sdFile.close();
+    
     fileName = audio;
 
     if (sdFile.open(fileName.c_str()))
@@ -28,6 +29,7 @@ bool PhysicalDevice::Test()
 {
     Serial.println("PhysicalDevice::Test");
     size_t pos = 0;
+    bool wasRunning = mp3.isRunning();
     if (mp3.isRunning() || sdFile.isOpen())
     {
         pos = sdFile.getPos();
@@ -49,9 +51,13 @@ bool PhysicalDevice::Test()
     }
     Serial.println("test finished");
     sdFile.close();
-    sdFile.open(fileName.c_str());
-    mp3.begin(&sdFile, &outI2s);
-    sdFile.seek(pos, SEEK_SET);
+
+    if (wasRunning)
+    {
+        sdFile.open(fileName.c_str());
+        mp3.begin(&sdFile, &outI2s);
+        sdFile.seek(pos, SEEK_SET);
+    }
 
     return true;
 }
@@ -78,39 +84,86 @@ bool PhysicalDevice::clearAudios()
     return true;
 }
 
+bool PhysicalDevice::DeleteAudio(String audioName)
+{
+    Serial.println("PhysicalDevice::DeleteAudio");
+    return SD.remove("/" + audioName);
+}
+
 bool PhysicalDevice::SetLoop(bool loop)
 {
-    Serial.println("PhysicalDevice::setLopp");
+    Serial.println("PhysicalDevice::setLoop");
     this->loop = loop;
+    return true;
+}
+
+bool PhysicalDevice::SetDistance(unsigned distance)
+{
+    Serial.println("PhysicalDevice::setDistance");
+    this->distance = distance;
     return true;
 }
 
 void PhysicalDevice::Run()
 {
-    //Serial.println("PhysicalDevice::Run");
+    static int size = 20;
+    static std::vector<int> values(size, 0);
+    static int index = 0;
+    static long unsigned t = millis();
+    static long unsigned t2 = millis();
+    
+    static bool objDetected = true;
+    static bool auxDetect = true;
+
     if (hc.isFinished())
     {
-        //Serial.println("get dist");
-        double dist = hc.getRange();
-        if (dist < 20)
-        {
-            if (mp3.isRunning())
-            {
-                if (!mp3.loop())
-                {
-                    mp3.stop();
+        //Serial.println("finished");
+        values[index] = hc.getRange();
+        detectedDist = 0;
+        for (int i = 0; i < size; i++)
+            detectedDist += values[i];
+        detectedDist /= size;
+        
+        //Serial.println("Distance computed: " + String(detectedDist));
+        if (++index >= size)
+            index = 0;
+        hc.start();
+    }
 
-                    if (loop)
-                    {
-                        sdFile.close();
-                        sdFile.open(fileName.c_str());
-                        if (mp3.begin(&sdFile, &outI2s))
-                            Serial.println("all ok");
-                    }
-                }
+    if ((detectedDist < distance) != objDetected)
+    {
+        if (!auxDetect)
+        {
+            t = millis();
+            Serial.println("trig");
+        }
+        auxDetect = true;
+    }
+    else
+        auxDetect = false;
+    
+    //if(auxDetect)
+      //  Serial.println("aa");
+
+    if (auxDetect && ((millis() - t) > debounceT) )
+    {
+        objDetected = !objDetected;
+        Serial.println(objDetected ? "detected" : "non detected");
+    }
+
+    if (objDetected)
+    {
+        if (mp3.isRunning() && !mp3.loop())
+        {
+            mp3.stop();
+            if (loop)
+            {
+                sdFile.close();
+                sdFile.open(fileName.c_str());
+                if (mp3.begin(&sdFile, &outI2s))
+                    Serial.println("all ok");
             }
         }
-        hc.start();
     }
 }
 
@@ -134,6 +187,7 @@ bool RemoteDevice::SetAudio(String audio)
         String resp;
         while (client.available())
             resp += static_cast<char>(client.read());
+
         if (resp.indexOf("notFound") >= 0)
         {
             Serial.println("sending file");
@@ -143,19 +197,23 @@ bool RemoteDevice::SetAudio(String audio)
                 Serial.println("can't open file to send");
                 return false;
             }
-            clock_t t = millis();
+            //clock_t t = millis();
             size_t sent = ftm.SendWith(client, file);
-            Serial.println("sent: " + String(sent) + " : " + String(file.size()));
-            Serial.println("t: " + String(sent));
+            //Serial.println("sent: " + String(sent) + " : " + String(file.size()));
+            //Serial.println("t: " + String(sent));
             if (sent != file.size())
                 return false;
-
         }
         res = true;
     }
-    res = false;
     client.stop();
     return res;
+}
+
+bool RemoteDevice::SetDistance(unsigned dist)
+{
+    Serial.println("RemoteDevice::SetDistance");
+    return _send("setDistance:" + String(dist));
 }
 
 bool RemoteDevice::SetLoop(bool loop)
@@ -166,12 +224,18 @@ bool RemoteDevice::SetLoop(bool loop)
 
 bool RemoteDevice::Test()
 {
-    Serial.println("RemoteDevice::SetATestudio");
-    return _send("test");
+    Serial.println("RemoteDevice::Testudio");
+    return _send("test:1");
 }
 
 bool RemoteDevice::clearAudios()
 {
     Serial.println("RemoteDevice::clearAudios");
     return _send("clearAudios");
+}
+
+bool RemoteDevice::DeleteAudio(String audioName)
+{
+    Serial.println("RemoteDevice::deleteAudio");
+    return _send("deleteAudio:" + audioName);
 }

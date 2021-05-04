@@ -22,3 +22,7 @@ extern MWiFiManager wifiManager;
 extern uint16_t commPort;
 extern WiFiServer server;
 extern FileTransferManager ftm;
+
+
+
+bool ReceiveAudio(WiFiClient& client, String fileName);

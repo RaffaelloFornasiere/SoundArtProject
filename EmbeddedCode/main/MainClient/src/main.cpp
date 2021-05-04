@@ -28,14 +28,24 @@ void setup()
 
     udp.begin(commPort);
     server.begin(commPort);
+    device.SetAudio("/g4.mp3");
+    device.SetDistance(30);
+    device.SetVolume(20);
 }
 
 void loop()
 {
+     
     if (Serial.available())
     {
+        Serial.println("ci sono");
         if (Serial.read() == 'r')
-            ESP.reset();
+        {
+            Serial.println("rebooting");
+            ESP.restart();
+            //ESP.reset();
+        }
+
         while (Serial.available())
             Serial.read();
     }
@@ -46,16 +56,16 @@ void loop()
         if (s == "SoundArtCheckUp")
         {
             commPort = udp.readString().toInt();
-            Serial.println("port received: " + String(commPort));
-            Serial.println("IP: " + udp.remoteIP().toString() +
-                           " port: " + String(commPort));
+            //Serial.println("port received: " + String(commPort));
+            //Serial.println("IP: " + udp.remoteIP().toString() +
+            //               " port: " + String(commPort));
             udp.beginPacket(udp.remoteIP().toString().c_str(), commPort);
 
             String message = "soundArtClientReply";
             Serial.println("sending:" + message);
             udp.print(message);
             udp.endPacket();
-            Serial.println(udp.getWriteError());
+            //Serial.println(udp.getWriteError());r
             while (udp.available())
                 udp.read();
             udp.stop();
@@ -65,47 +75,31 @@ void loop()
     WiFiClient client = server.available();
     while (client.connected())
     {
-        //client.setNoDelay(true);
+        client.setNoDelay(true);
         if (client.available())
         {
-            String cmd = "";
+            String cmd;
+            String arg;
+
             while (client.available())
                 cmd += static_cast<char>(client.read());
             Serial.println(cmd);
-
-            int fileE = 0;
+            arg = cmd.substring(cmd.indexOf(":") + 1);
+            
             if (cmd.indexOf("setVolume") >= 0)
-                device.SetVolume(cmd.substring(cmd.indexOf(":") + 1).toInt());
-            else if (cmd.indexOf("setLopp") >= 0)
-                device.SetLoop(cmd.substring(cmd.indexOf(":") + 1).toInt());
+                device.SetVolume(arg.toInt());
+            else if (cmd.indexOf("setLoop") >= 0)
+                device.SetLoop(arg.toInt());
+            else if (cmd.indexOf("setDistance") >= 0)
+                device.SetDistance(arg.toInt());
             else if (cmd.indexOf("file") >= 0)
-            {
-                String fileName = cmd.substring(cmd.indexOf(":") + 1);
-                fileE = device.SetAudio("/" + fileName);
-                Serial.println("fileE: " + String(fileE));
-                if (fileE == 0)
-                {
-                    Serial.println("notFound");
-                    client.print("notFound");
-                    
-                    if (client.connected())
-                    {
-                        File file = SD.open(fileName, "w");
-                        if (!file)
-                            Serial.println("can't open file for write");
-                        ftm.ReadFrom(client, file);
-                    }
-                    else
-                    {
-                        Serial.println("error");
-                    }
-
-                }
-                else
-                    client.print("ok");
-            }
+                ReceiveAudio(client, arg);
             else if (cmd.indexOf("test") >= 0)
-                device.Test();
+                Serial.println("test:" + String(device.Test()));
+            else if (cmd.indexOf("deleteAudio") >= 0)
+                device.DeleteAudio(arg);
+
+            client.stop();
         }
     }
     device.Run();

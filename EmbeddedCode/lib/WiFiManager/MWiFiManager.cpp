@@ -88,11 +88,16 @@ bool MWiFiManager::Connect()
 
     std::vector<std::pair<APCred, int>> scan = ScanWifis();
     Serial.println("available nets: ");
+    std::sort(scan.begin(), scan.end(), [](const std::pair<APCred, int>& i1, const std::pair<APCred, int>& i2)
+    {
+        return i1.second > i2.second;
+    });
+
     std::for_each(scan.begin(), scan.end(), [](const std::pair<APCred, int> &ap) {
         Serial.println("--> SSID: " + ap.first.toString() + " RSSI: " + String(ap.second));
     });
     Serial.println("");
-
+    
     for (auto i : scan)
     {
         APCred ap = *std::find_if(storedNets.begin(), storedNets.end(), [&](const APCred &ap) {

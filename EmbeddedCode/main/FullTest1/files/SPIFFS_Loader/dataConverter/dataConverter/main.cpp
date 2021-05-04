@@ -15,3 +15,14 @@ int main(int argc, char *argv[])
     }
 
 }
+
+
+class a
+{
+    int b;
+    double c;
+
+    a(int b, int c): b(b), c(c){}
+    //invece che
+    // a(int b, int c) {this->b = b; this->c = c;}
+};

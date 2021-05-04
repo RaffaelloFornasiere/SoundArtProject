@@ -1,28 +1,52 @@
+#include "ESP8266WiFi.h"
+
 #include <ESP8266WiFi.h>        // Include the Wi-Fi library
-#include <ESP8266WiFiMulti.h>   // Include the Wi-Fi-Multi library
 
-ESP8266WiFiMulti wifiMulti;     // Create an instance of the ESP8266WiFiMulti class, called 'wifiMulti'
+const char* ssid     = "TP-Link_739F";         // The SSID (name) of the Wi-Fi network you want to connect to
+const char* password = "32527476";     // The password of the Wi-Fi network
 
-void setup() {
-  Serial.begin(115200);         // Start the Serial communication to send messages to the computer
-  delay(10);
-  Serial.println('\n');
 
-  wifiMulti.addAP("FASTWEB-NGCN3V", "G3P32AOH7L");   // add Wi-Fi networks you want to connect to
-  wifiMulti.addAP("AndroidS6", "q2345678");
-  wifiMulti.addAP("Martin Router King ", "98Raffaello");
+void setup()
+{
+  Serial.begin(115200);
+  Serial.println("");
 
-  Serial.println("Connecting ...");
-  int i = 0;
-  while (wifiMulti.run() != WL_CONNECTED) { // Wait for the Wi-Fi to connect: scan for Wi-Fi networks, and connect to the strongest of the networks above
-    delay(1000);
-    Serial.print('.');
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+  delay(100);
+  Serial.print("Scan start ... ");
+  int n = WiFi.scanNetworks();
+  Serial.print(n);
+  Serial.println(" network(s) found");
+  for (int i = 0; i < n; i++)
+  {
+    Serial.println(WiFi.SSID(i));
   }
+  Serial.println();
+
+  delay(1000);
+   Serial.println();
+   Serial.print("MAC: ");
+   Serial.println(WiFi.macAddress());
+
+     
+  WiFi.begin(ssid, password);             // Connect to the network
+  Serial.print("Connecting to ");
+  Serial.print(ssid); Serial.println(" ...");
+
+  int i = 0;
+  while (WiFi.status() != WL_CONNECTED) { // Wait for the Wi-Fi to connect
+    delay(1000);
+    Serial.print(++i); Serial.print(' ');
+  }
+
   Serial.println('\n');
-  Serial.print("Connected to ");
-  Serial.println(WiFi.SSID());              // Tell us what network we're connected to
+  Serial.println("Connection established!");  
   Serial.print("IP address:\t");
-  Serial.println(WiFi.localIP());           // Send the IP address of the ESP8266 to the computer
+  Serial.println(WiFi.localIP());         // Send the IP address of the ESP8266 to the computer
 }
 
-void loop() { }
+void loop()
+{
+  
+}
